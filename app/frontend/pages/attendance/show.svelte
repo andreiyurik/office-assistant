@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Link } from '@inertiajs/svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
+  import DayStrip from '@/lib/components/DayStrip.svelte'
   import { Badge } from '@/lib/components/ui/badge'
   import type { CurrentUser } from '@/types'
 
@@ -42,14 +43,6 @@
     return new Date(`${iso}T00:00:00`)
   }
 
-  function weekday(iso: string): string {
-    return asDate(iso).toLocaleDateString('ru-RU', { weekday: 'short' })
-  }
-
-  function dayNumber(iso: string): number {
-    return asDate(iso).getDate()
-  }
-
   function fullDate(iso: string): string {
     return asDate(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   }
@@ -83,19 +76,8 @@
 <AppLayout {current_user}>
   <h1 class="text-xl font-semibold tracking-tight">Кто в офисе</h1>
 
-  <div class="mt-4 flex flex-wrap gap-1.5">
-    {#each days as day (day)}
-      <Link
-        href={href(day, selected_team_id)}
-        class="flex w-16 flex-col items-center rounded-lg border px-2 py-1.5 text-center transition-colors {day ===
-        selected_date
-          ? 'border-primary bg-primary text-primary-foreground'
-          : 'hover:bg-muted'}"
-      >
-        <span class="text-xs capitalize opacity-80">{weekday(day)}</span>
-        <span class="text-lg leading-tight font-semibold">{dayNumber(day)}</span>
-      </Link>
-    {/each}
+  <div class="mt-4">
+    <DayStrip {days} selected={selected_date} hrefFor={(day) => href(day, selected_team_id)} />
   </div>
 
   <p class="mt-4 text-sm text-muted-foreground">
