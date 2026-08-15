@@ -94,12 +94,13 @@ users = []
 
 first_names.each_with_index do |(first_ru, first_lat, gender), first_index|
   surnames.each_with_index do |(surname_ru, surname_lat), surname_index|
-    surname = gender == :f ? "#{surname_ru}а" : surname_ru
+    female = gender == :f
+    surname = female ? "#{surname_ru}а" : surname_ru
     team = teams[(first_index + surname_index) % teams.size]
 
     users << User.create!(
       name: "#{first_ru} #{surname}",
-      email_address: "#{first_lat}.#{surname_lat}@office.ru",
+      email_address: "#{first_lat}.#{surname_lat}#{'a' if female}@office.ru",
       password: "password",
       team: team
     )
