@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_170003) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_15_170004) do
   create_table "resources", force: :cascade do |t|
     t.integer "capacity"
     t.datetime "created_at", null: false
@@ -44,10 +44,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170003) do
 
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "default_desk_id"
     t.string "email_address", null: false
+    t.string "name"
     t.string "password_digest", null: false
+    t.integer "team_id"
     t.datetime "updated_at", null: false
+    t.index ["default_desk_id"], name: "index_users_on_default_desk_id"
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
+    t.index ["team_id"], name: "index_users_on_team_id"
   end
 
   create_table "zones", force: :cascade do |t|
@@ -60,4 +65,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170003) do
   add_foreign_key "resources", "zones"
   add_foreign_key "sessions", "users"
   add_foreign_key "teams", "zones"
+  add_foreign_key "users", "resources", column: "default_desk_id"
+  add_foreign_key "users", "teams"
 end
