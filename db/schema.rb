@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_170005) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
   create_table "bookings", force: :cascade do |t|
     t.datetime "checked_in_at"
     t.datetime "created_at", null: false
@@ -27,6 +27,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170005) do
     t.index ["starts_at"], name: "index_bookings_on_starts_at"
     t.index ["user_id", "starts_at"], name: "index_bookings_on_active_user_slot", unique: true, where: "state IN ('booked', 'checked_in')"
     t.index ["user_id"], name: "index_bookings_on_user_id"
+  end
+
+  create_table "recurring_schedules", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.integer "resource_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_id", null: false
+    t.date "valid_from", null: false
+    t.date "valid_to"
+    t.json "weekdays", default: [], null: false
+    t.index ["resource_id"], name: "index_recurring_schedules_on_resource_id"
+    t.index ["user_id"], name: "index_recurring_schedules_on_user_id", unique: true
   end
 
   create_table "resources", force: :cascade do |t|
@@ -82,6 +94,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170005) do
 
   add_foreign_key "bookings", "resources"
   add_foreign_key "bookings", "users"
+  add_foreign_key "recurring_schedules", "resources"
+  add_foreign_key "recurring_schedules", "users"
   add_foreign_key "resources", "zones"
   add_foreign_key "sessions", "users"
   add_foreign_key "teams", "zones"
