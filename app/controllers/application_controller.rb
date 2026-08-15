@@ -1,5 +1,30 @@
 class ApplicationController < ActionController::Base
   include Authentication
+
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
+
+  before_action :set_csrf_cookie
+
+  # Every page needs the person in the header, so it is shared instead of being
+  # repeated in each controller.
+  inertia_share current_user: -> { current_user_props }
+
+  private
+    # Inertia reads the token from this cookie and sends it back in a header on
+    # every non-GET request, which is what Rails checks.
+    def set_csrf_cookie
+      cookies["XSRF-TOKEN"] = { value: form_authenticity_token, same_site: :lax }
+    end
+
+    def current_user_props
+      return nil if Current.user.nil?
+
+      {
+        id: Current.user.id,
+        name: Current.user.name,
+        team_name: Current.user.team.name,
+        zone_name: Current.user.team.zone.name
+      }
+    end
 end

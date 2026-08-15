@@ -3,4 +3,13 @@ export type FlashData = {
   alert?: string
 }
 
-export type SharedProps = {}
+export type CurrentUser = {
+  id: number
+  name: string
+  team_name: string
+  zone_name: string
+}
+
+export type SharedProps = {
+  current_user: CurrentUser | null
+}
