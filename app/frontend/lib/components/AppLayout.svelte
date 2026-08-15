@@ -21,6 +21,8 @@
   <header class="sticky top-0 z-10 border-b bg-background/95 backdrop-blur">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5">
       <nav class="flex items-center gap-1">
+        <span class="mr-2 hidden text-sm font-semibold tracking-tight sm:inline">Office Assistant</span>
+
         {#each links as link (link.href)}
           <Link
             href={link.href}

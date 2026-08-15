@@ -205,6 +205,33 @@ days.each do |date|
   end
 end
 
+# --- The account the demo is shown from ---------------------------------------
+# The first person opens the app to a useful picture: teammates already in the
+# office, her favourite desk still free, and no desk of her own yet — so booking
+# one is something that can be done live on screen.
+
+demo_user = users.first
+desk_ids = desks.map(&:id)
+
+Booking.active.on_date(Date.current).where(user: demo_user, resource_id: desk_ids).delete_all
+Booking.active.on_date(Date.current).where(resource_id: demo_user.default_desk_id).delete_all
+
+teammates = users.select { |user| user.team_id == demo_user.team_id && user != demo_user }
+present_ids = Booking.active.on_date(Date.current)
+  .where(user: teammates, resource_id: desk_ids)
+  .pluck(:user_id)
+wanted = [ 4 - present_ids.size, 0 ].max
+
+teammates.reject { |user| present_ids.include?(user.id) }.first(wanted).each do |teammate|
+  taken_ids = Booking.active.on_date(Date.current).pluck(:resource_id)
+  desk = desks_by_zone[demo_user.team.zone_id].find do |candidate|
+    !taken_ids.include?(candidate.id) && candidate.id != demo_user.default_desk_id
+  end
+  next if desk.nil?
+
+  Booking.create!(user: teammate, resource: desk, starts_at: Date.current.beginning_of_day)
+end
+
 # --- Three bookings that make the demo visible --------------------------------
 # Re-run the seeds shortly before a demo: the abandoned booking is placed
 # relative to the current time.
