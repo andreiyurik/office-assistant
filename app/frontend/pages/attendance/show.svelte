@@ -192,8 +192,9 @@
       {/if}
 
       <Badge variant="secondary" class="shrink-0 tabular-nums">
-        Место {person.desk_name} · {person.zone_name}
+        <span class="hidden sm:inline">Место&nbsp;</span>{person.desk_name} · {person.zone_name}
       </Badge>
+      <span class="text-muted-foreground/60 sm:hidden" aria-hidden="true">›</span>
     </Link>
   </li>
 {/snippet}
