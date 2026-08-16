@@ -62,11 +62,15 @@
   }
 
   function book(deskId: number): void {
-    router.post('/bookings', { resource_id: deskId, date: selected_date }, { preserveScroll: true })
+    router.post(
+      '/desk_bookings',
+      { resource_id: deskId, date: selected_date },
+      { preserveScroll: true },
+    )
   }
 
   function cancel(bookingId: number): void {
-    router.delete(`/bookings/${bookingId}`, { preserveScroll: true })
+    router.delete(`/desk_bookings/${bookingId}`, { preserveScroll: true })
   }
 
   function initials(name: string): string {

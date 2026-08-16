@@ -5,7 +5,10 @@ Rails.application.routes.draw do
   get "desks", to: "desk_map#show"
   get "rooms", to: "rooms#show"
 
-  resources :bookings, only: %i[ create destroy ]
+  resources :desk_bookings, only: %i[ create destroy ]
+  resources :room_bookings, only: %i[ create destroy ] do
+    post :check_in, on: :member
+  end
 
   # Redirect to localhost from 127.0.0.1 to use same IP address with Vite server
   constraints(host: "127.0.0.1") do

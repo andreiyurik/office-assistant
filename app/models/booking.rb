@@ -9,6 +9,9 @@ class Booking < ApplicationRecord
   # started. Ten minutes is the same threshold Robin uses by default.
   RELEASE_AFTER = 10.minutes
 
+  # Confirming ahead of the meeting is allowed, the way Robin allows it.
+  CHECK_IN_OPENS_BEFORE = 10.minutes
+
   ACTIVE_STATES = %w[booked checked_in].freeze
   STATES = (ACTIVE_STATES + %w[released cancelled]).freeze
 
@@ -50,6 +53,38 @@ class Booking < ApplicationRecord
       .where.not(group_id: checked_in_groups)
 
     where(id: abandoned.pluck(:id)).update_all(state: "released", updated_at: now)
+  end
+
+  # A meeting is one row per slot, tied together by a group id: booking an hour
+  # writes two rows, and everything that follows treats them as one meeting.
+  def self.book_meeting!(user:, room:, starts_at:, slots: 1)
+    group_id = SecureRandom.uuid
+
+    transaction do
+      Array.new(slots) do |index|
+        create!(
+          user: user,
+          resource: room,
+          starts_at: starts_at + (index * SLOT),
+          group_id: group_id
+        )
+      end
+    end
+  end
+
+  def check_in_open?(now = Time.current)
+    now >= starts_at - CHECK_IN_OPENS_BEFORE && now < ends_at
+  end
+
+  # One check-in covers the whole meeting.
+  def check_in!(now: Time.current)
+    self.class.where(group_id: group_id, state: "booked")
+      .update_all(state: "checked_in", checked_in_at: now, updated_at: now)
+  end
+
+  def cancel_meeting!(now: Time.current)
+    self.class.active.where(group_id: group_id)
+      .update_all(state: "cancelled", updated_at: now)
   end
 
   def active?

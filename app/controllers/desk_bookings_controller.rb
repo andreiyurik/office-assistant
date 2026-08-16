@@ -1,4 +1,4 @@
-class BookingsController < ApplicationController
+class DeskBookingsController < ApplicationController
   def create
     date = booking_date
     desk = Resource.desks.find(params[:resource_id])
