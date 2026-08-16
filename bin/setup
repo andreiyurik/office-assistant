@@ -14,7 +14,10 @@ FileUtils.chdir APP_ROOT do
 
   puts "== Installing dependencies =="
   system("bundle check") || system!("bundle install")
-  system! "npm install"
+  # Carbon's packages run IBM's telemetry collector from a postinstall hook.
+  # package.json denies it through allowScripts; this is the vendor's own
+  # switch, kept as a second lock.
+  system!({ "IBM_TELEMETRY_DISABLED" => "true" }, "npm install")
 
   # puts "\n== Copying sample files =="
   # unless File.exist?("config/database.yml")

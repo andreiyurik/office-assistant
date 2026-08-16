@@ -14,14 +14,38 @@
   } = $props()
 </script>
 
-<div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-  <div class="min-w-0">
-    <h1 class="text-2xl font-semibold tracking-tight">{title}</h1>
+<div class="page-header">
+  <div class="page-header__text">
+    <h1 class="bx--type-productive-heading-04">{title}</h1>
     {#if description}
-      <p class="mt-1 text-sm text-muted-foreground">{description}</p>
+      <p class="bx--type-body-long-01">{description}</p>
     {/if}
   </div>
   {#if children}
-    <div class="shrink-0">{@render children()}</div>
+    <div class="page-header__controls">{@render children()}</div>
   {/if}
 </div>
+
+<style>
+  .page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--cds-spacing-05);
+  }
+
+  .page-header__text {
+    min-width: 0;
+  }
+
+  .page-header__text p {
+    margin-block-start: var(--cds-spacing-02);
+    max-width: 42rem;
+    color: var(--cds-text-02);
+  }
+
+  .page-header__controls {
+    flex-shrink: 0;
+  }
+</style>

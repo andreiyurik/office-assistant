@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Form } from '@inertiajs/svelte'
   import { firstError } from '@/lib/format'
-  import { Button } from '@/lib/components/ui/button'
-  import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon'
-  import SquaresFourIcon from 'phosphor-svelte/lib/SquaresFourIcon'
-  import CalendarBlankIcon from 'phosphor-svelte/lib/CalendarBlankIcon'
+  import { Button } from 'carbon-components-svelte'
+  import UserMultiple from 'carbon-icons-svelte/lib/UserMultiple.svelte'
+  import Grid from 'carbon-icons-svelte/lib/Grid.svelte'
+  import Calendar from 'carbon-icons-svelte/lib/Calendar.svelte'
 
   let { errors = {} }: { errors?: Record<string, string[] | string> } = $props()
 
@@ -13,9 +13,9 @@
   // What the product does, in the order a person meets it. Shown on the wide
   // layout only; the form is the whole story on a phone.
   const points = [
-    { icon: UsersThreeIcon, title: 'Кто сегодня в офисе', text: 'Список на неделю вперёд, по командам.' },
-    { icon: SquaresFourIcon, title: 'Место рядом с командой', text: 'Карта этажа, бронь в один клик, своё место каждую неделю.' },
-    { icon: CalendarBlankIcon, title: 'Переговорная без накладок', text: 'Слоты по полчаса; забытая бронь освобождается сама.' },
+    { icon: UserMultiple, title: 'Кто сегодня в офисе', text: 'Список на неделю вперёд, по командам.' },
+    { icon: Grid, title: 'Место рядом с командой', text: 'Карта этажа, бронь в один клик, своё место каждую неделю.' },
+    { icon: Calendar, title: 'Переговорная без накладок', text: 'Слоты по полчаса; забытая бронь освобождается сама.' },
   ]
 </script>
 
@@ -47,7 +47,7 @@
         {#each points as point (point.title)}
           <li class="flex gap-4">
             <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
-              <point.icon size={20} weight="regular" />
+              <point.icon size={20} />
             </span>
             <span>
               <span class="block font-medium">{point.title}</span>
@@ -104,7 +104,7 @@
           />
         </div>
 
-        <Button type="submit" size="lg" class="h-11 w-full text-[15px]">Войти</Button>
+        <Button type="submit" size="lg">Войти</Button>
       </Form>
 
       <p class="mt-8 text-center text-xs text-muted-foreground">

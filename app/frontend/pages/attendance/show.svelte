@@ -4,13 +4,13 @@
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import { asDate, initials } from '@/lib/format'
-  import { Badge } from '@/lib/components/ui/badge'
-  import { buttonVariants } from '@/lib/components/ui/button'
-  import MapPinIcon from 'phosphor-svelte/lib/MapPinIcon'
-  import ArmchairIcon from 'phosphor-svelte/lib/ArmchairIcon'
-  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon'
-  import CaretRightIcon from 'phosphor-svelte/lib/CaretRightIcon'
-  import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon'
+  import { Button, Tag } from 'carbon-components-svelte'
+  import { visitOnClick } from '@/lib/visit'
+  import LocationFilled from 'carbon-icons-svelte/lib/LocationFilled.svelte'
+  import Events from 'carbon-icons-svelte/lib/Events.svelte'
+  import ArrowRight from 'carbon-icons-svelte/lib/ArrowRight.svelte'
+  import ChevronRight from 'carbon-icons-svelte/lib/ChevronRight.svelte'
+  import UserMultiple from 'carbon-icons-svelte/lib/UserMultiple.svelte'
 
   type Person = {
     id: number
@@ -90,20 +90,20 @@
   >
     {#if my_desk}
       <span class="flex items-center gap-2">
-        <MapPinIcon size={18} weight="fill" class="text-success" aria-hidden="true" />
+        <LocationFilled size={20} class="text-success" aria-hidden="true" />
         <span>Вы в офисе, место <span class="font-medium">{my_desk.name}</span> · {my_desk.zone_name}</span>
       </span>
-      <Link href="/desks?date={selected_date}" class={buttonVariants({ variant: 'outline', size: 'sm' })}>
+      <Button kind="tertiary" size="small" href="/desks?date={selected_date}" onclick={visitOnClick(`/desks?date=${selected_date}`)}>
         Изменить место
-      </Link>
+      </Button>
     {:else}
       <span class="flex items-center gap-2">
-        <ArmchairIcon size={18} class="text-primary" aria-hidden="true" />
+        <Events size={20} class="text-primary" aria-hidden="true" />
         Вас нет в списке на этот день.
       </span>
-      <Link href="/desks?date={selected_date}" class={buttonVariants({ size: 'sm' })}>
+      <Button size="small" href="/desks?date={selected_date}" onclick={visitOnClick(`/desks?date=${selected_date}`)}>
         Забронировать место
-      </Link>
+      </Button>
     {/if}
   </div>
 
@@ -134,7 +134,7 @@
 
   {#if people.length === 0}
     <div class="mt-6 rounded-xl border border-dashed px-4 py-12 text-center">
-      <UsersThreeIcon size={40} weight="thin" class="mx-auto text-muted-foreground/60" aria-hidden="true" />
+      <UserMultiple size={32} class="mx-auto text-muted-foreground/60" aria-hidden="true" />
       <p class="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
         {#if selected_team_id}
           В этот день из выбранной команды никто не бронировал место.
@@ -144,9 +144,9 @@
           Забронируйте место на карте — коллеги увидят вас в списке.
         {/if}
       </p>
-      <Link href="/desks?date={selected_date}" class="{buttonVariants({ variant: 'outline', size: 'sm' })} mt-4">
+      <Button kind="tertiary" size="small" href="/desks?date={selected_date}" onclick={visitOnClick(`/desks?date=${selected_date}`)}>
         Открыть карту мест
-      </Link>
+      </Button>
     </div>
   {:else if grouped}
     {@render group('Ваша команда', teammates)}
@@ -196,14 +196,12 @@
 
       {#if !person.is_me}
         <span class="hidden items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary sm:flex">
-          Сесть рядом <ArrowRightIcon size={14} aria-hidden="true" />
+          Сесть рядом <ArrowRight size={16} aria-hidden="true" />
         </span>
       {/if}
 
-      <Badge variant="secondary" class="shrink-0 tabular-nums sm:min-w-40 sm:justify-start">
-        <span class="hidden sm:inline">Место&nbsp;</span>{person.desk_name} · {person.zone_name}
-      </Badge>
-      <CaretRightIcon size={16} class="text-muted-foreground/60 sm:hidden" aria-hidden="true" />
+      <Tag type="gray">Место {person.desk_name} · {person.zone_name}</Tag>
+      <ChevronRight size={16} class="text-muted-foreground/60 sm:hidden" aria-hidden="true" />
     </Link>
   </li>
 {/snippet}

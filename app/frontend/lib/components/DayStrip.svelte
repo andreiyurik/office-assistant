@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { Link } from '@inertiajs/svelte'
+  import { router } from '@inertiajs/svelte'
+  import { ContentSwitcher, Switch } from 'carbon-components-svelte'
   import { asDate } from '@/lib/format'
 
   let {
@@ -14,22 +15,51 @@
 
   // The first day in the strip is always today.
   const today = $derived(days[0])
+
+  // The switcher keeps its own selection, so it is re-synced from the props
+  // after every visit. A click moves it before the server answers, which is
+  // why this only runs when the selected day actually changes.
+  let selectedIndex = $state(0)
+
+  $effect(() => {
+    selectedIndex = days.indexOf(selected)
+  })
+
+  function label(day: string): string {
+    if (day === today) return 'сегодня'
+
+    const date = asDate(day)
+    return `${date.toLocaleDateString('ru-RU', { weekday: 'short' })} ${date.getDate()}`
+  }
 </script>
 
-<nav class="flex gap-1.5" aria-label="День">
-  {#each days as day (day)}
-    <Link
-      href={hrefFor(day)}
-      aria-current={day === selected ? 'date' : undefined}
-      class="flex w-14 flex-col items-center rounded-lg border px-1 py-1.5 text-center transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:w-16 {day ===
-      selected
-        ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-        : 'bg-background text-foreground hover:border-primary/40 hover:bg-primary/5'}"
-    >
-      <span class="text-[11px] capitalize {day === selected ? 'opacity-90' : 'text-muted-foreground'}">
-        {day === today ? 'сегодня' : asDate(day).toLocaleDateString('ru-RU', { weekday: 'short' })}
-      </span>
-      <span class="text-lg leading-tight font-semibold tabular-nums">{asDate(day).getDate()}</span>
-    </Link>
-  {/each}
-</nav>
+<!-- Manual selection mode: the arrow keys move focus and Enter opens the day,
+     so the keyboard never changes the page by drifting through the strip. -->
+<div class="day-strip">
+  <ContentSwitcher bind:selectedIndex selectionMode="manual" aria-label="День">
+    {#each days as day (day)}
+      <Switch text={label(day)} onclick={() => router.visit(hrefFor(day))} />
+    {/each}
+  </ContentSwitcher>
+</div>
+
+<style>
+  /* Five days need room for a weekday and a number; Carbon's default lets a
+     switch shrink until the label is clipped. Five of them are wider than a
+     phone, so below the medium breakpoint the strip scrolls sideways — today
+     is the first item, so the days people actually pick stay in view. */
+  .day-strip {
+    overflow-x: auto;
+  }
+
+  .day-strip :global(.bx--content-switcher-btn) {
+    min-width: 5.5rem;
+    white-space: nowrap;
+  }
+
+  @media (min-width: 42rem) {
+    .day-strip {
+      overflow-x: visible;
+    }
+  }
+</style>

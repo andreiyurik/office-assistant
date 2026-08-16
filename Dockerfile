@@ -52,9 +52,12 @@ RUN bundle install && \
     # -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
     bundle exec bootsnap precompile -j 1 --gemfile
 
-# Install node modules
+# Install node modules. Carbon's packages run IBM's telemetry collector from a
+# postinstall hook; package.json denies it through allowScripts, and the env
+# var is the vendor's own switch in case the image is built with an npm that
+# does not honour that field.
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN IBM_TELEMETRY_DISABLED=true npm ci
 
 # Copy application code
 COPY . .

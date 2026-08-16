@@ -4,10 +4,10 @@
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
-  import { Button } from '@/lib/components/ui/button'
-  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon'
-  import ArrowCounterClockwiseIcon from 'phosphor-svelte/lib/ArrowCounterClockwiseIcon'
-  import CalendarBlankIcon from 'phosphor-svelte/lib/CalendarBlankIcon'
+  import { Button } from 'carbon-components-svelte'
+  import CheckmarkFilled from 'carbon-icons-svelte/lib/CheckmarkFilled.svelte'
+  import Undo from 'carbon-icons-svelte/lib/Undo.svelte'
+  import Calendar from 'carbon-icons-svelte/lib/Calendar.svelte'
   import { firstError, time } from '@/lib/format'
   import RoomCalendar, {
     type CalendarRoom,
@@ -114,7 +114,7 @@
           <span class="size-3.5 rounded border bg-muted"></span> занято или время прошло
         </span>
         <span class="flex items-center gap-2 pt-1">
-          <ArrowCounterClockwiseIcon size={14} aria-hidden="true" />
+          <Undo size={16} aria-hidden="true" />
           «освободилось» — бронь сняли автоматически, никто не отметился
         </span>
       </section>
@@ -130,7 +130,7 @@
 
     {#if myMeetings.length === 0}
       <p class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-        <CalendarBlankIcon size={16} aria-hidden="true" /> На этот день броней нет.
+        <Calendar size={16} aria-hidden="true" /> На этот день броней нет.
       </p>
     {:else}
       <ul class="mt-3 divide-y">
@@ -148,11 +148,11 @@
             <div class="mt-2 flex flex-wrap items-center gap-2">
               {#if meeting.checked_in}
                 <span class="flex items-center gap-1 text-xs text-success">
-                  <CheckCircleIcon size={14} weight="fill" aria-hidden="true" /> вы отметились
+                  <CheckmarkFilled size={16} aria-hidden="true" /> вы отметились
                 </span>
               {:else if meeting.can_check_in}
-                <Button size="sm" onclick={() => checkIn(meeting)}>
-                  <CheckCircleIcon size={16} weight="bold" aria-hidden="true" /> Отметиться
+                <Button size="small" onclick={() => checkIn(meeting)}>
+                  <CheckmarkFilled size={16} aria-hidden="true" /> Отметиться
                 </Button>
               {:else}
                 <span class="text-xs text-muted-foreground">
@@ -160,7 +160,7 @@
                 </span>
               {/if}
 
-              <Button variant="ghost" size="sm" class="ml-auto text-muted-foreground" onclick={() => cancel(meeting)}>
+              <Button kind="ghost" size="small" onclick={() => cancel(meeting)}>
                 Отменить
               </Button>
             </div>

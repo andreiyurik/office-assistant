@@ -80,6 +80,11 @@ jobs:
           cache: npm
 
       - name: Install npm packages
+        # Carbon's packages run IBM's telemetry collector from a postinstall
+        # hook. package.json denies it through allowScripts; this is the
+        # vendor's own switch, kept as a second lock.
+        env:
+          IBM_TELEMETRY_DISABLED: "true"
         run: npm ci
 
       - name: Run tests
@@ -102,6 +107,11 @@ jobs:
           cache: npm
 
       - name: Install npm packages
+        # Carbon's packages run IBM's telemetry collector from a postinstall
+        # hook. package.json denies it through allowScripts; this is the
+        # vendor's own switch, kept as a second lock.
+        env:
+          IBM_TELEMETRY_DISABLED: "true"
         run: npm ci
 
       - name: Type-check Svelte components and TypeScript

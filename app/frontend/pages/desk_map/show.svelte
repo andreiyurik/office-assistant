@@ -4,10 +4,10 @@
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
-  import { Button } from '@/lib/components/ui/button'
+  import { Button } from 'carbon-components-svelte'
   import { firstError, initials } from '@/lib/format'
-  import StarIcon from 'phosphor-svelte/lib/StarIcon'
-  import MapPinIcon from 'phosphor-svelte/lib/MapPinIcon'
+  import StarFilled from 'carbon-icons-svelte/lib/StarFilled.svelte'
+  import LocationFilled from 'carbon-icons-svelte/lib/LocationFilled.svelte'
 
   type TakenBy = {
     name: string
@@ -198,7 +198,7 @@
                   {/if}
 
                   {#if desk.is_default}
-                    <StarIcon size={11} weight="fill" class="absolute top-1 right-1 opacity-80" aria-label="Ваше обычное место" />
+                    <StarFilled size={16} class="absolute top-1 right-1 opacity-80" aria-label="Ваше обычное место" />
                   {/if}
                 </button>
               {/each}
@@ -264,7 +264,7 @@
           <span class="size-3.5 rounded border bg-muted"></span> занято
         </span>
         <span class="flex items-center gap-2">
-          <span class="flex size-3.5 items-center justify-center rounded border"><StarIcon size={9} weight="fill" aria-hidden="true" /></span>
+          <span class="flex size-3.5 items-center justify-center rounded border"><StarFilled size={16} aria-hidden="true" /></span>
           ваше обычное место
         </span>
       </section>
@@ -281,16 +281,16 @@
 
       {#if my_booking}
         <p class="mt-2 flex items-center gap-2 text-sm">
-          <MapPinIcon size={18} weight="fill" class="text-success" aria-hidden="true" />
+          <LocationFilled size={20} class="text-success" aria-hidden="true" />
           <span><span class="font-medium">{my_booking.desk_name}</span> · {my_booking.zone_name}</span>
         </p>
-        <Button variant="outline" size="sm" class="mt-3" onclick={() => cancel(my_booking.id)}>
+        <Button kind="tertiary" size="small" onclick={() => cancel(my_booking.id)}>
           Отменить бронь
         </Button>
       {:else}
         <p class="mt-1 text-sm text-muted-foreground">На этот день не забронировано.</p>
         {#if default_desk && default_desk.free}
-          <Button size="sm" class="mt-3 w-full" onclick={() => book(default_desk.id)}>
+          <Button size="small" onclick={() => book(default_desk.id)}>
             Занять моё место {default_desk.name}
           </Button>
         {:else if default_desk}
