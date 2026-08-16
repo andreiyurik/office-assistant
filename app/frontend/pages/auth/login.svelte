@@ -2,6 +2,7 @@
   import { Form } from '@inertiajs/svelte'
   import { firstError } from '@/lib/format'
   import { Button } from '@/lib/components/ui/button'
+  import BrandMark from '@/lib/components/BrandMark.svelte'
 
   let { errors = {} }: { errors?: Record<string, string[] | string> } = $props()
 
@@ -12,14 +13,19 @@
   <title>Вход — Office Assistant</title>
 </svelte:head>
 
-<div class="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+<div class="flex min-h-screen items-center justify-center bg-muted/40 px-4 py-10">
   <div class="w-full max-w-sm">
-    <h1 class="text-2xl font-semibold tracking-tight">Office Assistant</h1>
-    <p class="mt-1 text-sm text-muted-foreground">Бронирование мест и переговорных</p>
+    <div class="flex items-center gap-3">
+      <BrandMark class="size-9" />
+      <div>
+        <h1 class="text-xl font-semibold tracking-tight">Office Assistant</h1>
+        <p class="text-sm text-muted-foreground">Места, переговорные, кто в офисе</p>
+      </div>
+    </div>
 
-    <Form action="/session" method="post" class="mt-6 space-y-4">
+    <Form action="/session" method="post" class="mt-6 space-y-4 rounded-2xl border bg-card p-6 shadow-sm">
       {#if error}
-        <p class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p role="alert" class="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {error}
         </p>
       {/if}
@@ -34,7 +40,8 @@
           required
           autofocus
           autocomplete="username"
-          class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          placeholder="имя.фамилия@office.ru"
+          class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
       </div>
 
@@ -47,11 +54,11 @@
           required
           autocomplete="current-password"
           maxlength="72"
-          class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         />
       </div>
 
-      <Button type="submit" class="w-full">Войти</Button>
+      <Button type="submit" size="lg" class="w-full">Войти</Button>
     </Form>
   </div>
 </div>

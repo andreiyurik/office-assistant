@@ -2,8 +2,10 @@
   import { Link } from '@inertiajs/svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
+  import PageHeader from '@/lib/components/PageHeader.svelte'
   import { asDate, initials } from '@/lib/format'
   import { Badge } from '@/lib/components/ui/badge'
+  import { buttonVariants } from '@/lib/components/ui/button'
 
   type Person = {
     id: number
@@ -37,6 +39,18 @@
 
   const today = $derived(days[0])
 
+  // Teammates first, as their own group, when the list is not filtered by team.
+  const teammates = $derived(people.filter((person) => person.is_teammate))
+  const others = $derived(people.filter((person) => !person.is_teammate))
+  const grouped = $derived(!selected_team_id && teammates.length > 0 && others.length > 0)
+
+  const description = $derived.by(() => {
+    const when = selected_date === today ? 'Сегодня' : fullDate(selected_date)
+    const count = `${people.length} ${peopleWord(people.length)}`
+    if (selected_team_id || teammates_count === 0) return `${when} в офисе ${count}.`
+    return `${when} в офисе ${count}, из них ${teammates_count} из вашей команды.`
+  })
+
   function fullDate(iso: string): string {
     return asDate(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   }
@@ -60,51 +74,49 @@
 </svelte:head>
 
 <AppLayout>
-  <h1 class="text-xl font-semibold tracking-tight">Кто в офисе</h1>
-
-  <div class="mt-4">
+  <PageHeader title="Кто в офисе" {description}>
     <DayStrip {days} selected={selected_date} hrefFor={(day) => href(day, selected_team_id)} />
-  </div>
-
-  <p class="mt-4 text-sm text-muted-foreground">
-    {selected_date === today ? 'Сегодня' : fullDate(selected_date)} в офисе
-    <span class="font-medium text-foreground">{people.length} {peopleWord(people.length)}</span>{#if !selected_team_id && teammates_count > 0}, из них
-      <span class="font-medium text-foreground">{teammates_count}</span> из вашей команды{/if}.
-  </p>
+  </PageHeader>
 
   <div
-    class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-sm"
+    class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm {my_desk
+      ? 'border-success/30 bg-success/5'
+      : 'border-primary/20 bg-primary/5'}"
   >
     {#if my_desk}
-      <span>Вы в офисе, место <span class="font-medium">{my_desk.name}</span> · {my_desk.zone_name}</span>
-      <Link href="/desks?date={selected_date}" class="font-medium underline underline-offset-4">
-        Изменить
+      <span class="flex items-center gap-2">
+        <span class="size-2 rounded-full bg-success" aria-hidden="true"></span>
+        Вы в офисе, место <span class="font-medium">{my_desk.name}</span> · {my_desk.zone_name}
+      </span>
+      <Link href="/desks?date={selected_date}" class={buttonVariants({ variant: 'outline', size: 'sm' })}>
+        Изменить место
       </Link>
     {:else}
-      <span class="text-muted-foreground">Вас нет в списке на этот день.</span>
-      <Link
-        href="/desks?date={selected_date}"
-        class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
-      >
+      <span class="text-foreground">Вас нет в списке на этот день.</span>
+      <Link href="/desks?date={selected_date}" class={buttonVariants({ size: 'sm' })}>
         Забронировать место
       </Link>
     {/if}
   </div>
 
-  <div class="mt-4 flex flex-wrap gap-1.5">
+  <!-- On a phone the chips scroll sideways in one row instead of stacking. -->
+  <div class="-mx-4 mt-5 flex gap-1.5 overflow-x-auto px-4 pb-1 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0 sm:whitespace-normal" role="group" aria-label="Команда">
     <Link
       href={href(selected_date, null)}
-      class="rounded-full border px-3 py-1 text-sm transition-colors {selected_team_id
+      aria-pressed={!selected_team_id}
+      class="rounded-full border px-3 py-1 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected_team_id
         ? 'hover:bg-muted'
-        : 'border-foreground bg-foreground text-background'}"
+        : 'border-primary/30 bg-primary/10 font-medium text-primary'}"
     >
       Все команды
     </Link>
     {#each teams as team (team.id)}
       <Link
         href={href(selected_date, team.id)}
-        class="rounded-full border px-3 py-1 text-sm transition-colors {selected_team_id === team.id
-          ? 'border-foreground bg-foreground text-background'
+        aria-pressed={selected_team_id === team.id}
+        class="rounded-full border px-3 py-1 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected_team_id ===
+        team.id
+          ? 'border-primary/30 bg-primary/10 font-medium text-primary'
           : 'hover:bg-muted'}"
       >
         {team.name}
@@ -113,8 +125,8 @@
   </div>
 
   {#if people.length === 0}
-    <div class="mt-6 rounded-lg border border-dashed px-4 py-10 text-center">
-      <p class="text-sm text-muted-foreground">
+    <div class="mt-6 rounded-xl border border-dashed px-4 py-12 text-center">
+      <p class="mx-auto max-w-sm text-sm text-muted-foreground">
         {#if selected_team_id}
           В этот день из выбранной команды никто не бронировал место.
           Снимите фильтр, чтобы увидеть остальных.
@@ -123,47 +135,65 @@
           Забронируйте место на карте — коллеги увидят вас в списке.
         {/if}
       </p>
-      <Link
-        href="/desks?date={selected_date}"
-        class="mt-3 inline-block text-sm font-medium underline underline-offset-4"
-      >
+      <Link href="/desks?date={selected_date}" class="{buttonVariants({ variant: 'outline', size: 'sm' })} mt-4">
         Открыть карту мест
       </Link>
     </div>
+  {:else if grouped}
+    {@render group('Ваша команда', teammates)}
+    {@render group('Остальные', others)}
   {:else}
-    <ul class="mt-4 divide-y rounded-lg border">
+    <ul class="mt-5 divide-y overflow-hidden rounded-xl border">
       {#each people as person (person.id)}
-        <li class={person.is_teammate ? 'bg-muted/40' : ''}>
-          <Link
-            href="/desks?date={selected_date}&near={person.id}"
-            title="Открыть карту рядом с {person.name}"
-            class="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted"
-          >
-            <span
-              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
-            >
-              {initials(person.name)}
-            </span>
-
-            <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-medium">
-                {person.name}{#if person.is_me}<span class="ml-1.5 text-xs text-muted-foreground">вы</span>{/if}
-              </span>
-              <span class="block truncate text-xs text-muted-foreground">{person.team_name}</span>
-            </span>
-
-            {#if !person.is_me}
-              <span class="hidden text-xs text-muted-foreground group-hover:text-foreground sm:inline">
-                Сесть рядом →
-              </span>
-            {/if}
-
-            <Badge variant="secondary" class="shrink-0">
-              Место {person.desk_name} · {person.zone_name}
-            </Badge>
-          </Link>
-        </li>
+        {@render row(person)}
       {/each}
     </ul>
   {/if}
 </AppLayout>
+
+{#snippet group(label: string, list: Person[])}
+  <h2 class="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+    {label} <span class="ml-1 tabular-nums">{list.length}</span>
+  </h2>
+  <ul class="divide-y overflow-hidden rounded-xl border">
+    {#each list as person (person.id)}
+      {@render row(person)}
+    {/each}
+  </ul>
+{/snippet}
+
+{#snippet row(person: Person)}
+  <li>
+    <Link
+      href="/desks?date={selected_date}&near={person.id}"
+      title="Открыть карту рядом с {person.name}"
+      class="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+    >
+      <span
+        class="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold {person.is_teammate
+          ? 'bg-primary/10 text-primary'
+          : 'bg-secondary text-secondary-foreground'}"
+        aria-hidden="true"
+      >
+        {initials(person.name)}
+      </span>
+
+      <span class="min-w-0 flex-1">
+        <span class="block truncate text-sm font-medium">
+          {person.name}{#if person.is_me}<span class="ml-1.5 text-xs font-normal text-muted-foreground">вы</span>{/if}
+        </span>
+        <span class="block truncate text-xs text-muted-foreground">{person.team_name}</span>
+      </span>
+
+      {#if !person.is_me}
+        <span class="hidden text-xs text-muted-foreground transition-colors group-hover:text-primary sm:inline">
+          Сесть рядом →
+        </span>
+      {/if}
+
+      <Badge variant="secondary" class="shrink-0 tabular-nums">
+        Место {person.desk_name} · {person.zone_name}
+      </Badge>
+    </Link>
+  </li>
+{/snippet}

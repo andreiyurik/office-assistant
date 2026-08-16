@@ -2,7 +2,9 @@
   import { router } from '@inertiajs/svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
+  import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
+  import { Button } from '@/lib/components/ui/button'
   import { firstError, time } from '@/lib/format'
   import RoomCalendar, {
     type CalendarRoom,
@@ -66,14 +68,20 @@
 </svelte:head>
 
 <AppLayout>
-  <div class="flex flex-wrap items-end justify-between gap-3">
-    <h1 class="text-xl font-semibold tracking-tight">Переговорные</h1>
+  <PageHeader
+    title="Переговорные"
+    description="Нажмите на свободное время — это {slot_minutes} минут. Протяните вниз, чтобы занять до {(max_slots * slot_minutes) / 60} ч подряд."
+  >
     <DayStrip {days} selected={selected_date} hrefFor={(day) => `/rooms?date=${day}`} />
-  </div>
+  </PageHeader>
 
   <!-- The calendar keeps its place: everything that appears and disappears —
        bookings, hints, messages — lives in the sidebar or floats above. -->
-  <div class="mt-4 flex flex-col items-start gap-4 md:flex-row">
+  <div class="mt-6 flex flex-col items-start gap-6 lg:flex-row">
+    <!-- On a phone your own meetings — and the check-in button — come before
+         the calendar; that is what a phone is opened for. -->
+    <div class="w-full lg:hidden">{@render myBookings()}</div>
+
     <div class="w-full min-w-0 flex-1">
       <RoomCalendar
         date={selected_date}
@@ -87,74 +95,64 @@
       />
     </div>
 
-    <aside class="w-full shrink-0 space-y-3 md:w-64">
-      <section class="rounded-lg border p-3">
-        <h2 class="text-sm font-medium">Как забронировать</h2>
-        <p class="mt-1 text-xs text-muted-foreground">
-          Нажмите на свободное время — это {slot_minutes} минут. Протяните вниз, чтобы занять
-          больше: до {(max_slots * slot_minutes) / 60} ч подряд.
-        </p>
-      </section>
+    <aside class="w-full shrink-0 space-y-3 lg:w-72">
+      <div class="hidden lg:block">{@render myBookings()}</div>
 
-      <section class="rounded-lg border p-3">
-        <h2 class="text-sm font-medium">Ваши брони</h2>
-
-        {#if myMeetings.length === 0}
-          <p class="mt-1 text-xs text-muted-foreground">На этот день броней нет.</p>
-        {:else}
-          <ul class="mt-2 space-y-3">
-            {#each myMeetings as meeting (meeting.id)}
-              <li>
-                <p class="text-sm">
-                  <span class="font-medium">{meeting.room_name}</span>
-                  · {time(meeting.starts_at)}–{time(meeting.ends_at)}
-                </p>
-
-                <div class="mt-1 flex flex-wrap items-center gap-2">
-                  {#if meeting.checked_in}
-                    <span class="text-xs text-muted-foreground">вы отметились</span>
-                  {:else if meeting.can_check_in}
-                    <button
-                      type="button"
-                      onclick={() => checkIn(meeting)}
-                      class="rounded-md bg-primary px-2 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/80"
-                    >
-                      Отметиться
-                    </button>
-                  {:else}
-                    <span class="text-xs text-muted-foreground">
-                      отметиться с {time(meeting.check_in_opens_at)}
-                    </span>
-                  {/if}
-
-                  <button
-                    type="button"
-                    onclick={() => cancel(meeting)}
-                    class="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                  >
-                    Отменить
-                  </button>
-                </div>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </section>
-
-      <section class="space-y-1.5 rounded-lg border p-3 text-xs text-muted-foreground">
-        <span class="flex items-center gap-1.5">
-          <span class="size-3 rounded border bg-background"></span> свободно
+      <section class="space-y-2 rounded-xl border bg-card p-4 text-xs text-muted-foreground">
+        <span class="flex items-center gap-2">
+          <span class="size-3.5 rounded border bg-background"></span> свободно
         </span>
-        <span class="flex items-center gap-1.5">
-          <span class="size-3 rounded bg-primary"></span> ваша бронь
+        <span class="flex items-center gap-2">
+          <span class="size-3.5 rounded bg-primary"></span> ваша бронь
         </span>
-        <span class="flex items-center gap-1.5">
-          <span class="size-3 rounded bg-muted"></span> занято или время прошло
+        <span class="flex items-center gap-2">
+          <span class="size-3.5 rounded bg-muted"></span> занято или время прошло
         </span>
-        <p>«освободилось» — бронь сняли автоматически, никто не отметился</p>
+        <p class="pt-1">«освободилось» — бронь сняли автоматически, никто не отметился.</p>
       </section>
     </aside>
   </div>
 
   <Toast message={error} />
 </AppLayout>
+
+{#snippet myBookings()}
+  <section class="rounded-xl border bg-card p-4">
+    <h2 class="text-sm font-semibold">Ваши брони</h2>
+
+    {#if myMeetings.length === 0}
+      <p class="mt-1 text-sm text-muted-foreground">На этот день броней нет.</p>
+    {:else}
+      <ul class="mt-3 divide-y">
+        {#each myMeetings as meeting (meeting.id)}
+          <li class="py-3 first:pt-0 last:pb-0">
+            <p class="flex items-center gap-2 text-sm">
+              <span
+                class="size-2 rounded-full {meeting.checked_in ? 'bg-success' : 'bg-primary'}"
+                aria-hidden="true"
+              ></span>
+              <span class="font-medium">{meeting.room_name}</span>
+              <span class="text-muted-foreground tabular-nums">{time(meeting.starts_at)}–{time(meeting.ends_at)}</span>
+            </p>
+
+            <div class="mt-2 flex flex-wrap items-center gap-2">
+              {#if meeting.checked_in}
+                <span class="text-xs text-success">вы отметились</span>
+              {:else if meeting.can_check_in}
+                <Button size="sm" onclick={() => checkIn(meeting)}>Отметиться</Button>
+              {:else}
+                <span class="text-xs text-muted-foreground">
+                  отметиться можно с {time(meeting.check_in_opens_at)}
+                </span>
+              {/if}
+
+              <Button variant="ghost" size="sm" class="text-muted-foreground" onclick={() => cancel(meeting)}>
+                Отменить
+              </Button>
+            </div>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </section>
+{/snippet}
