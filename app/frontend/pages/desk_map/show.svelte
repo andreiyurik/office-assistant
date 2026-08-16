@@ -1,13 +1,13 @@
 <script lang="ts">
   import { router } from '@inertiajs/svelte'
+  import { Button, Modal, SelectableTile, Tile, Toggle } from 'carbon-components-svelte'
+  import LocationFilled from 'carbon-icons-svelte/lib/LocationFilled.svelte'
+  import StarFilled from 'carbon-icons-svelte/lib/StarFilled.svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
-  import { Button } from 'carbon-components-svelte'
   import { firstError, initials } from '@/lib/format'
-  import StarFilled from 'carbon-icons-svelte/lib/StarFilled.svelte'
-  import LocationFilled from 'carbon-icons-svelte/lib/LocationFilled.svelte'
 
   type TakenBy = {
     name: string
@@ -64,11 +64,11 @@
   } = $props()
 
   const weekdayOptions = [
-    { value: 1, label: 'Пн' },
-    { value: 2, label: 'Вт' },
-    { value: 3, label: 'Ср' },
-    { value: 4, label: 'Чт' },
-    { value: 5, label: 'Пт' },
+    { value: 1, label: 'Понедельник' },
+    { value: 2, label: 'Вторник' },
+    { value: 3, label: 'Среда' },
+    { value: 4, label: 'Четверг' },
+    { value: 5, label: 'Пятница' },
   ]
 
   // The days are shown as chosen only when the schedule is about the desk on
@@ -76,20 +76,6 @@
   const scheduleDays = $derived(
     recurring && my_booking && recurring.desk_id === my_booking.desk_id ? recurring.weekdays : [],
   )
-
-  function toggleWeekday(day: number): void {
-    if (!my_booking) return
-
-    const next = scheduleDays.includes(day)
-      ? scheduleDays.filter((chosen) => chosen !== day)
-      : [...scheduleDays, day].sort()
-
-    router.patch(
-      '/recurring_schedule',
-      { resource_id: my_booking.desk_id, weekdays: next, date: selected_date },
-      { preserveScroll: true },
-    )
-  }
 
   const myZone = $derived(zones.find((zone) => zone.is_mine))
   const nearZone = $derived(near ? zones.find((zone) => zone.id === near.zone_id) : undefined)
@@ -100,6 +86,45 @@
   )
 
   const error = $derived(firstError(errors))
+  const freeTotal = $derived(zones.reduce((sum, zone) => sum + zone.free_count, 0))
+  const deskTotal = $derived(zones.reduce((sum, zone) => sum + zone.desks.length, 0))
+
+  // Taking a second desk moves the booking, so the move is confirmed instead of
+  // happening silently. Two variables rather than one: the desk stays put while
+  // the dialog fades out, so the sentence inside it does not blank mid-close.
+  let moveTo = $state<Desk | null>(null)
+  let moveOpen = $state(false)
+
+  // SelectableTile keeps its own checked state and flips it on click, so the
+  // map has to hold that state too — otherwise a cancelled move leaves a tick
+  // on a desk nobody booked. Re-read from the server after every response,
+  // and again when a move is called off.
+  let selected = $state<Record<number, boolean>>({})
+
+  function syncSelected(): void {
+    selected = Object.fromEntries(
+      zones.flatMap((zone) => zone.desks).map((desk) => [desk.id, desk.taken_by?.is_me ?? false]),
+    )
+  }
+
+  $effect(syncSelected)
+
+  function cancelMove(): void {
+    moveOpen = false
+    syncSelected()
+  }
+
+  function toggleWeekday(day: number, on: boolean): void {
+    if (!my_booking) return
+
+    const next = on ? [...scheduleDays, day].sort() : scheduleDays.filter((chosen) => chosen !== day)
+
+    router.patch(
+      '/recurring_schedule',
+      { resource_id: my_booking.desk_id, weekdays: next, date: selected_date },
+      { preserveScroll: true },
+    )
+  }
 
   function book(deskId: number): void {
     router.post(
@@ -113,6 +138,36 @@
     router.delete(`/desk_bookings/${bookingId}`, { preserveScroll: true })
   }
 
+  function chooseDesk(desk: Desk, event: MouseEvent): void {
+    if (desk.taken_by?.is_me) {
+      cancel(my_booking!.id)
+      return
+    }
+
+    if (my_booking) {
+      // The tile is a label over a checkbox, and the browser hands focus to
+      // that checkbox after this handler returns — over the focus the modal
+      // has just taken, which leaves Escape with nothing listening. Stopping
+      // the activation also keeps a tick off a desk that is not booked yet.
+      // Focus still has to land on the tile, or Carbon has nowhere to put it
+      // back when the dialog closes.
+      event.preventDefault()
+      ;(event.currentTarget as HTMLLabelElement | null)?.control?.focus()
+      moveTo = desk
+      moveOpen = true
+      return
+    }
+
+    book(desk.id)
+  }
+
+  function confirmMove(): void {
+    if (!moveTo) return
+
+    moveOpen = false
+    book(moveTo.id)
+  }
+
   function columns(zone: Zone): number {
     return Math.max(...zone.desks.map((desk) => desk.col)) - zone.min_col + 1
   }
@@ -123,21 +178,12 @@
     return `Место ${desk.name} — ${desk.taken_by.name}, ${desk.taken_by.team_name}`
   }
 
-  function deskClasses(desk: Desk): string {
-    if (desk.taken_by?.is_me) {
-      return 'bg-primary text-primary-foreground border-primary shadow-sm cursor-pointer hover:bg-primary/90'
-    }
-    if (desk.taken_by?.is_teammate) {
-      return 'bg-primary/10 text-primary border-primary/40 font-medium cursor-default'
-    }
-    if (desk.taken_by) {
-      return 'bg-muted text-muted-foreground border-transparent cursor-default'
-    }
-    return 'bg-background hover:border-primary/60 hover:bg-primary/5 hover:shadow-sm cursor-pointer'
+  function deskState(desk: Desk): string {
+    if (desk.taken_by?.is_me) return 'mine'
+    if (desk.taken_by?.is_teammate) return 'teammate'
+    if (desk.taken_by) return 'taken'
+    return 'free'
   }
-
-  const freeTotal = $derived(zones.reduce((sum, zone) => sum + zone.free_count, 0))
-  const deskTotal = $derived(zones.reduce((sum, zone) => sum + zone.desks.length, 0))
 </script>
 
 <svelte:head>
@@ -145,175 +191,425 @@
 </svelte:head>
 
 <AppLayout>
-  <PageHeader title="Карта мест" description="Свободно {freeTotal} из {deskTotal} мест. Нажмите на свободное место, чтобы забронировать.">
+  <PageHeader
+    title="Карта мест"
+    description="Свободно {freeTotal} из {deskTotal} мест. Нажмите на свободное место, чтобы забронировать."
+  >
     <DayStrip {days} selected={selected_date} hrefFor={(day) => `/desks?date=${day}`} />
   </PageHeader>
 
   <!-- The map keeps its place: everything that appears and disappears — the
-       booking, the schedule, the hints — lives in the sidebar or floats above. -->
-  <div class="mt-6 flex flex-col items-start gap-6 lg:flex-row">
-    <!-- On a phone the status card comes before the map: what you have is
-         more urgent than the whole floor. On a wide screen it is the sidebar. -->
-    <div class="w-full lg:hidden">{@render status()}</div>
+       booking, the schedule, the hints — lives in the sidebar. -->
+  <div class="layout">
+    <!-- On a phone what you have is more urgent than the whole floor, so the
+         status comes first; on a wide screen it is the top of the sidebar. -->
+    <div class="layout__status">{@render status()}</div>
 
-    <div class="w-full min-w-0 flex-1">
-      <div class="grid gap-4 md:grid-cols-2">
-        {#each zones as zone (zone.id)}
-          <section
-            class="rounded-xl border bg-card p-4 {zone.is_mine
-              ? 'border-primary/30 bg-primary/[0.03]'
-              : ''}"
-          >
-            <header class="mb-3 flex items-center justify-between gap-2">
-              <h2 class="flex items-center gap-2 text-sm font-semibold">
-                {zone.name}
-                {#if zone.is_mine}
-                  <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                    ваша команда
-                  </span>
-                {/if}
-              </h2>
-              <span class="text-xs text-muted-foreground tabular-nums">
-                свободно {zone.free_count} из {zone.desks.length}
-              </span>
-            </header>
+    <div class="zones">
+      {#each zones as zone (zone.id)}
+        <Tile class={zone.is_mine ? 'zone zone--mine' : 'zone'}>
+          <header class="zone__head">
+            <h2 class="bx--type-productive-heading-01">
+              {zone.name}
+              {#if zone.is_mine}<span class="zone__mine">ваша команда</span>{/if}
+            </h2>
+            <span class="bx--type-caption-01">свободно {zone.free_count} из {zone.desks.length}</span>
+          </header>
 
-            <div class="grid gap-2" style="grid-template-columns: repeat({columns(zone)}, minmax(0, 1fr))">
-              {#each zone.desks as desk (desk.id)}
-                <button
-                  type="button"
+          <div class="desks" style="grid-template-columns: repeat({columns(zone)}, minmax(0, 1fr))">
+            {#each zone.desks as desk (desk.id)}
+              <div
+                class="desk desk--{deskState(desk)}"
+                class:desk--near={desk.is_near_target}
+                style="grid-row: {desk.row - zone.min_row + 1}; grid-column: {desk.col - zone.min_col + 1}"
+              >
+                <!-- `light` is not decoration: a selectable tile is ui-01, the
+                     same white as the zone tile it sits on, so without it the
+                     free desks have no visible box at all. -->
+                <SelectableTile
+                  light
                   title={deskTitle(desk)}
+                  bind:selected={selected[desk.id]}
                   disabled={!!desk.taken_by && !desk.taken_by.is_me}
-                  onclick={() => (desk.taken_by?.is_me ? cancel(my_booking!.id) : book(desk.id))}
-                  style="grid-row: {desk.row - zone.min_row + 1}; grid-column: {desk.col - zone.min_col + 1}"
-                  class="relative flex aspect-square flex-col items-center justify-center rounded-lg border text-sm transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none {deskClasses(
-                    desk,
-                  )} {desk.is_near_target ? 'ring-2 ring-primary ring-offset-2' : ''}"
+                  on:click={(event) => chooseDesk(desk, event)}
                 >
                   {#if desk.taken_by}
-                    <span class="text-xs font-semibold">{initials(desk.taken_by.name)}</span>
-                    <span class="text-[10px] opacity-70 tabular-nums">{desk.name}</span>
+                    <span class="desk__initials">{initials(desk.taken_by.name)}</span>
+                    <span class="desk__number bx--type-caption-01">{desk.name}</span>
                   {:else}
-                    <span class="font-medium tabular-nums">{desk.name}</span>
+                    <span class="desk__number desk__number--free">{desk.name}</span>
                   {/if}
 
                   {#if desk.is_default}
-                    <StarFilled size={16} class="absolute top-1 right-1 opacity-80" aria-label="Ваше обычное место" />
+                    <StarFilled size={16} class="desk__star" aria-label="Ваше обычное место" />
                   {/if}
-                </button>
-              {/each}
-            </div>
-          </section>
-        {/each}
-      </div>
-    </div>
-
-    <aside class="w-full shrink-0 space-y-3 lg:w-72">
-      <div class="hidden lg:block">{@render status()}</div>
-
-      {#if my_booking}
-        <section class="rounded-xl border bg-card p-4">
-          <h2 class="text-sm font-semibold">Бронировать каждую</h2>
-          <div class="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Дни недели">
-            {#each weekdayOptions as option (option.value)}
-              <button
-                type="button"
-                aria-pressed={scheduleDays.includes(option.value)}
-                onclick={() => toggleWeekday(option.value)}
-                class="rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {scheduleDays.includes(
-                  option.value,
-                )
-                  ? 'border-primary bg-primary text-primary-foreground'
-                  : 'hover:border-primary/40 hover:bg-primary/5'}"
-              >
-                {option.label}
-              </button>
+                </SelectableTile>
+              </div>
             {/each}
           </div>
-          <p class="mt-2 text-xs text-muted-foreground">
-            {#if recurring && recurring.desk_id !== my_booking.desk_id}
-              Сейчас постоянное место — {recurring.desk_name}
-            {:else if scheduleDays.length > 0}
-              Брони создаются на две недели вперёд
-            {:else}
-              Выберите дни, и место забронируется само
-            {/if}
-          </p>
-        </section>
-      {/if}
+        </Tile>
+      {/each}
+    </div>
 
-      {#if myZone && myZone.free_count === 0}
-        <section class="rounded-xl border bg-muted/40 p-4 text-sm">
-          В зоне {myZone.name}, где сидит ваша команда, свободных мест нет.
-          {#if roomiest}Больше всего свободных — в зоне {roomiest.name}: {roomiest.free_count}.{/if}
-        </section>
-      {/if}
+    <aside class="layout__side">
+      <div class="side">
+        <div class="side__status">{@render status()}</div>
 
-      <section class="space-y-2 rounded-xl border bg-card p-4 text-xs text-muted-foreground">
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded border bg-background"></span> свободно
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded bg-primary"></span> ваше место
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded border border-primary/40 bg-primary/10"></span>
-          коллега по команде
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded border bg-muted"></span> занято
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="flex size-3.5 items-center justify-center rounded border"><StarFilled size={16} aria-hidden="true" /></span>
-          ваше обычное место
-        </span>
-      </section>
+        {#if my_booking}
+          <Tile>
+            <h2 class="bx--type-productive-heading-01">Бронировать это место каждую</h2>
+            <div class="weekdays">
+              {#each weekdayOptions as option (option.value)}
+                <Toggle
+                  size="sm"
+                  labelText={option.label}
+                  labelA=""
+                  labelB=""
+                  toggled={scheduleDays.includes(option.value)}
+                  on:toggle={(event) => toggleWeekday(option.value, event.detail.toggled)}
+                />
+              {/each}
+            </div>
+            <p class="side__hint bx--type-helper-text-01">
+              {#if recurring && recurring.desk_id !== my_booking.desk_id}
+                Сейчас постоянное место — {recurring.desk_name}
+              {:else if scheduleDays.length > 0}
+                Брони создаются на две недели вперёд
+              {:else}
+                Выберите дни, и место забронируется само
+              {/if}
+            </p>
+          </Tile>
+        {/if}
+
+        {#if myZone && myZone.free_count === 0}
+          <Tile>
+            <p class="bx--type-body-long-01">
+              В зоне {myZone.name}, где сидит ваша команда, свободных мест нет.
+              {#if roomiest}Больше всего свободных — в зоне {roomiest.name}: {roomiest.free_count}.{/if}
+            </p>
+          </Tile>
+        {/if}
+
+        <Tile>
+          <h2 class="bx--type-productive-heading-01">Обозначения</h2>
+          <ul class="legend bx--type-caption-01">
+            <li><span class="legend__swatch legend__swatch--free"></span> свободно</li>
+            <li><span class="legend__swatch legend__swatch--mine"></span> ваше место</li>
+            <li><span class="legend__swatch legend__swatch--teammate"></span> коллега по команде</li>
+            <li><span class="legend__swatch legend__swatch--taken"></span> занято</li>
+            <li><StarFilled size={16} aria-hidden="true" /> ваше обычное место</li>
+          </ul>
+        </Tile>
+      </div>
     </aside>
   </div>
+
+  <!-- One desk per person per day, so picking a second one moves the booking.
+       Kept in the tree rather than wrapped in {#if}: Carbon returns focus to
+       whatever opened it when its close transition ends, and an unmounted
+       modal never gets that far. -->
+  <Modal
+    open={moveOpen}
+    size="xs"
+    selectorPrimaryFocus=".bx--btn--primary"
+    modalHeading="Перенести бронь?"
+    primaryButtonText="Перенести"
+    secondaryButtonText="Оставить как есть"
+    on:click:button--primary={confirmMove}
+    on:click:button--secondary={cancelMove}
+    on:close={cancelMove}
+  >
+    <p class="bx--type-body-long-01">
+      На этот день у вас уже есть место {my_booking?.desk_name} в зоне {my_booking?.zone_name}.
+      Если перенести, оно освободится, а вы займёте место {moveTo?.name}.
+    </p>
+  </Modal>
 
   <Toast message={error} />
 </AppLayout>
 
 {#snippet status()}
-  <div class="space-y-3">
-    <section class="rounded-xl border bg-card p-4">
-      <h2 class="text-sm font-semibold">Ваше место</h2>
+  <Tile>
+    <h2 class="bx--type-productive-heading-01">Ваше место</h2>
 
-      {#if my_booking}
-        <p class="mt-2 flex items-center gap-2 text-sm">
-          <LocationFilled size={20} class="text-success" aria-hidden="true" />
-          <span><span class="font-medium">{my_booking.desk_name}</span> · {my_booking.zone_name}</span>
-        </p>
-        <Button kind="tertiary" size="small" onclick={() => cancel(my_booking.id)}>
-          Отменить бронь
+    {#if my_booking}
+      <p class="side__desk">
+        <LocationFilled size={20} aria-hidden="true" />
+        <span><strong>{my_booking.desk_name}</strong> · {my_booking.zone_name}</span>
+      </p>
+      <Button kind="tertiary" size="small" onclick={() => cancel(my_booking.id)}>Отменить бронь</Button>
+    {:else}
+      <p class="side__hint bx--type-body-long-01">На этот день не забронировано.</p>
+      {#if default_desk && default_desk.free}
+        <Button size="small" onclick={() => book(default_desk.id)}>
+          Занять моё место {default_desk.name}
         </Button>
-      {:else}
-        <p class="mt-1 text-sm text-muted-foreground">На этот день не забронировано.</p>
-        {#if default_desk && default_desk.free}
-          <Button size="small" onclick={() => book(default_desk.id)}>
-            Занять моё место {default_desk.name}
-          </Button>
-        {:else if default_desk}
-          <p class="mt-2 text-xs text-muted-foreground">
-            Обычное место {default_desk.name} занято — выберите другое на карте.
-          </p>
-        {/if}
+      {:else if default_desk}
+        <p class="side__hint bx--type-helper-text-01">
+          Обычное место {default_desk.name} занято — выберите другое на карте.
+        </p>
       {/if}
-    </section>
-    {#if near}
-      <section class="rounded-xl border border-primary/20 bg-primary/5 p-4 text-sm">
+    {/if}
+  </Tile>
+
+  {#if near}
+    <Tile>
+      <p class="bx--type-body-long-01">
         {#if nearZone && near.desk_name}
-          <span class="font-medium">{near.name}</span> сидит на месте {near.desk_name} в зоне
-          {nearZone.name} — оно обведено на карте.
+          <strong>{near.name}</strong> сидит на месте {near.desk_name} в зоне {nearZone.name} —
+          оно обведено на карте.
           {#if nearZone.free_count > 0}
             Рядом свободно мест: {nearZone.free_count}.
           {:else}
             Свободных мест в этой зоне не осталось — выберите соседнюю.
           {/if}
         {:else}
-          <span class="font-medium">{near.name}</span> не бронировал место на этот день.
+          <strong>{near.name}</strong> не бронировал место на этот день.
         {/if}
-      </section>
-    {/if}
-  </div>
+      </p>
+    </Tile>
+  {/if}
 {/snippet}
+
+<style>
+  .layout {
+    margin-block-start: var(--cds-spacing-06);
+    display: grid;
+    gap: var(--cds-spacing-05);
+  }
+
+  .layout__status {
+    display: grid;
+    gap: var(--cds-spacing-05);
+  }
+
+  /* On a phone the sidebar is not dropped, it moves under the map: the weekday
+     schedule and the legend live there and are the only way to reach them. */
+  .layout__side {
+    display: block;
+  }
+
+  .zones {
+    display: grid;
+    gap: var(--cds-spacing-05);
+  }
+
+  :global(.zone) {
+    display: grid;
+    gap: var(--cds-spacing-05);
+    align-content: start;
+  }
+
+  /* The team's own zone is named by an edge, not by a wash of colour: colour on
+     this screen has to stay free for desk states. */
+  :global(.zone--mine) {
+    box-shadow: inset var(--cds-spacing-02) 0 0 0 var(--cds-interactive-01);
+  }
+
+  .zone__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--cds-spacing-03);
+  }
+
+  .zone__head span {
+    color: var(--cds-text-02);
+  }
+
+  .zone__mine {
+    margin-inline-start: var(--cds-spacing-03);
+    color: var(--cds-interactive-01);
+    font-weight: 400;
+  }
+
+  .desks {
+    display: grid;
+    gap: var(--cds-spacing-03);
+  }
+
+  /* Carbon sizes a tile for a card: 8rem by 4rem. A desk on a floor plan is a
+     square the size of a fingertip, so the map sets the box itself and keeps
+     the component's states, focus ring and keyboard behaviour. */
+  .desk :global(.bx--tile) {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    aspect-ratio: 1;
+    padding: var(--cds-spacing-02);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .desk :global(.bx--tile-content) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .desk :global(.bx--tile__checkmark) {
+    inset-block-start: var(--cds-spacing-01);
+    inset-inline-end: var(--cds-spacing-01);
+  }
+
+  .desk :global(.bx--tile__checkmark svg) {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .desk :global(.desk__star) {
+    position: absolute;
+    inset-block-end: var(--cds-spacing-01);
+    inset-inline-end: var(--cds-spacing-01);
+    fill: var(--cds-text-03);
+  }
+
+  .desk--mine :global(.desk__star) {
+    fill: var(--cds-interactive-01);
+  }
+
+  .desk--teammate :global(.bx--tile) {
+    background-color: var(--cds-highlight);
+    color: var(--cds-text-01);
+  }
+
+  .desk--taken :global(.bx--tile) {
+    background-color: var(--cds-ui-03);
+  }
+
+  .desk--near :global(.bx--tile) {
+    outline: var(--cds-spacing-01) solid var(--cds-interactive-01);
+    outline-offset: var(--cds-spacing-01);
+  }
+
+  .desk__number {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .desk__number--free {
+    font-weight: 600;
+  }
+
+  .desk__initials {
+    font-weight: 600;
+    font-size: 0.75rem;
+  }
+
+  .desk--taken .desk__number,
+  .desk--teammate .desk__number {
+    color: var(--cds-text-02);
+  }
+
+  .side {
+    display: grid;
+    gap: var(--cds-spacing-05);
+    align-content: start;
+  }
+
+  .side :global(.bx--tile),
+  .layout__status :global(.bx--tile) {
+    display: grid;
+    justify-items: start;
+    gap: var(--cds-spacing-03);
+  }
+
+  .side__status {
+    display: none;
+    gap: var(--cds-spacing-05);
+  }
+
+  .side__desk {
+    display: flex;
+    align-items: center;
+    gap: var(--cds-spacing-03);
+  }
+
+  .side__desk :global(svg) {
+    flex-shrink: 0;
+    fill: var(--cds-support-02);
+  }
+
+  .side__hint {
+    color: var(--cds-text-02);
+  }
+
+  .weekdays {
+    display: grid;
+    gap: var(--cds-spacing-03);
+    width: 100%;
+  }
+
+  .legend {
+    display: grid;
+    gap: var(--cds-spacing-03);
+    color: var(--cds-text-02);
+  }
+
+  .legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--cds-spacing-03);
+  }
+
+  .legend :global(svg) {
+    fill: var(--cds-text-03);
+  }
+
+  .legend__swatch {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    border: 1px solid var(--cds-ui-04);
+  }
+
+  /* Carbon draws a selected tile with a Gray 100 border, not an accent one. */
+  .legend__swatch--mine {
+    background-color: var(--cds-ui-02);
+    border-color: var(--cds-ui-05);
+  }
+
+  .legend__swatch--free {
+    background-color: var(--cds-ui-02);
+  }
+
+  .legend__swatch--teammate {
+    background-color: var(--cds-highlight);
+    border-color: var(--cds-highlight);
+  }
+
+  .legend__swatch--taken {
+    background-color: var(--cds-ui-03);
+    border-color: var(--cds-ui-03);
+  }
+
+  /* Two zones side by side from the medium breakpoint. */
+  @media (min-width: 42rem) {
+    .zones {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* The sidebar moves beside the map where Carbon expects a two-column product
+     layout, and the status moves up into it. */
+  @media (min-width: 66rem) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr) 18rem;
+      align-items: start;
+      gap: var(--cds-spacing-06);
+    }
+
+    .layout__status {
+      display: none;
+    }
+
+    .side__status {
+      display: grid;
+    }
+  }
+</style>
