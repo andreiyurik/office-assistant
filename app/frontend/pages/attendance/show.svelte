@@ -6,6 +6,11 @@
   import { asDate, initials } from '@/lib/format'
   import { Badge } from '@/lib/components/ui/badge'
   import { buttonVariants } from '@/lib/components/ui/button'
+  import MapPinIcon from 'phosphor-svelte/lib/MapPinIcon'
+  import ArmchairIcon from 'phosphor-svelte/lib/ArmchairIcon'
+  import ArrowRightIcon from 'phosphor-svelte/lib/ArrowRightIcon'
+  import CaretRightIcon from 'phosphor-svelte/lib/CaretRightIcon'
+  import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon'
 
   type Person = {
     id: number
@@ -85,14 +90,17 @@
   >
     {#if my_desk}
       <span class="flex items-center gap-2">
-        <span class="size-2 rounded-full bg-success" aria-hidden="true"></span>
-        Вы в офисе, место <span class="font-medium">{my_desk.name}</span> · {my_desk.zone_name}
+        <MapPinIcon size={18} weight="fill" class="text-success" aria-hidden="true" />
+        <span>Вы в офисе, место <span class="font-medium">{my_desk.name}</span> · {my_desk.zone_name}</span>
       </span>
       <Link href="/desks?date={selected_date}" class={buttonVariants({ variant: 'outline', size: 'sm' })}>
         Изменить место
       </Link>
     {:else}
-      <span class="text-foreground">Вас нет в списке на этот день.</span>
+      <span class="flex items-center gap-2">
+        <ArmchairIcon size={18} class="text-primary" aria-hidden="true" />
+        Вас нет в списке на этот день.
+      </span>
       <Link href="/desks?date={selected_date}" class={buttonVariants({ size: 'sm' })}>
         Забронировать место
       </Link>
@@ -126,7 +134,8 @@
 
   {#if people.length === 0}
     <div class="mt-6 rounded-xl border border-dashed px-4 py-12 text-center">
-      <p class="mx-auto max-w-sm text-sm text-muted-foreground">
+      <UsersThreeIcon size={40} weight="thin" class="mx-auto text-muted-foreground/60" aria-hidden="true" />
+      <p class="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
         {#if selected_team_id}
           В этот день из выбранной команды никто не бронировал место.
           Снимите фильтр, чтобы увидеть остальных.
@@ -186,15 +195,15 @@
       </span>
 
       {#if !person.is_me}
-        <span class="hidden text-xs text-muted-foreground transition-colors group-hover:text-primary sm:inline">
-          Сесть рядом →
+        <span class="hidden items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary sm:flex">
+          Сесть рядом <ArrowRightIcon size={14} aria-hidden="true" />
         </span>
       {/if}
 
       <Badge variant="secondary" class="shrink-0 tabular-nums">
         <span class="hidden sm:inline">Место&nbsp;</span>{person.desk_name} · {person.zone_name}
       </Badge>
-      <span class="text-muted-foreground/60 sm:hidden" aria-hidden="true">›</span>
+      <CaretRightIcon size={16} class="text-muted-foreground/60 sm:hidden" aria-hidden="true" />
     </Link>
   </li>
 {/snippet}

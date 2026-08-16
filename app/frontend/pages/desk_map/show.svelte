@@ -6,6 +6,8 @@
   import Toast from '@/lib/components/Toast.svelte'
   import { Button } from '@/lib/components/ui/button'
   import { firstError, initials } from '@/lib/format'
+  import StarIcon from 'phosphor-svelte/lib/StarIcon'
+  import MapPinIcon from 'phosphor-svelte/lib/MapPinIcon'
 
   type TakenBy = {
     name: string
@@ -196,7 +198,7 @@
                   {/if}
 
                   {#if desk.is_default}
-                    <span class="absolute top-1 right-1.5 text-[10px] leading-none opacity-80" title="Ваше обычное место">★</span>
+                    <StarIcon size={11} weight="fill" class="absolute top-1 right-1 opacity-80" aria-label="Ваше обычное место" />
                   {/if}
                 </button>
               {/each}
@@ -262,7 +264,8 @@
           <span class="size-3.5 rounded bg-muted"></span> занято
         </span>
         <span class="flex items-center gap-2">
-          <span class="flex size-3.5 items-center justify-center rounded border text-[9px]">★</span> ваше обычное место
+          <span class="flex size-3.5 items-center justify-center rounded border"><StarIcon size={9} weight="fill" aria-hidden="true" /></span>
+          ваше обычное место
         </span>
       </section>
     </aside>
@@ -278,8 +281,8 @@
 
       {#if my_booking}
         <p class="mt-2 flex items-center gap-2 text-sm">
-          <span class="size-2 rounded-full bg-success" aria-hidden="true"></span>
-          <span class="font-medium">{my_booking.desk_name}</span> · {my_booking.zone_name}
+          <MapPinIcon size={18} weight="fill" class="text-success" aria-hidden="true" />
+          <span><span class="font-medium">{my_booking.desk_name}</span> · {my_booking.zone_name}</span>
         </p>
         <Button variant="outline" size="sm" class="mt-3" onclick={() => cancel(my_booking.id)}>
           Отменить бронь

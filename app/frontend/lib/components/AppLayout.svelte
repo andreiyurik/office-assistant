@@ -4,6 +4,11 @@
   import { initials, time } from '@/lib/format'
   import { Button, buttonVariants } from '@/lib/components/ui/button'
   import BrandMark from '@/lib/components/BrandMark.svelte'
+  import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon'
+  import SquaresFourIcon from 'phosphor-svelte/lib/SquaresFourIcon'
+  import CalendarBlankIcon from 'phosphor-svelte/lib/CalendarBlankIcon'
+  import CheckCircleIcon from 'phosphor-svelte/lib/CheckCircleIcon'
+  import SignOutIcon from 'phosphor-svelte/lib/SignOutIcon'
   import type { CurrentUser, PendingCheckIn } from '@/types'
 
   let { children }: { children: Snippet } = $props()
@@ -13,9 +18,9 @@
   const pending = $derived(page.props.pending_check_in as PendingCheckIn | null)
 
   const links = [
-    { href: '/', label: 'Кто в офисе' },
-    { href: '/desks', label: 'Карта мест' },
-    { href: '/rooms', label: 'Переговорные' },
+    { href: '/', label: 'Кто в офисе', icon: UsersThreeIcon },
+    { href: '/desks', label: 'Карта мест', icon: SquaresFourIcon },
+    { href: '/rooms', label: 'Переговорные', icon: CalendarBlankIcon },
   ]
 
   function isActive(href: string): boolean {
@@ -50,12 +55,13 @@
               <Link
                 href={link.href}
                 aria-current={isActive(link.href) ? 'page' : undefined}
-                class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {isActive(
+                class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {isActive(
                   link.href,
                 )
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
               >
+                <link.icon size={18} weight={isActive(link.href) ? 'fill' : 'regular'} aria-hidden="true" />
                 {link.label}
               </Link>
             {/each}
@@ -73,10 +79,7 @@
               )}."
               onclick={() => checkIn(pending.id)}
             >
-              <span class="relative flex size-2">
-                <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary-foreground/70"></span>
-                <span class="relative inline-flex size-2 rounded-full bg-primary-foreground"></span>
-              </span>
+              <CheckCircleIcon size={18} weight="bold" aria-hidden="true" />
               Отметиться
               <span class="hidden font-normal opacity-80 lg:inline">
                 · {pending.room_name}, {time(pending.starts_at)}
@@ -101,9 +104,11 @@
             href="/session"
             method="delete"
             as="button"
+            aria-label="Выйти"
             class={buttonVariants({ variant: 'ghost', size: 'sm' }) + ' text-muted-foreground'}
           >
-            Выйти
+            <SignOutIcon size={18} aria-hidden="true" />
+            <span class="hidden sm:inline">Выйти</span>
           </Link>
         </div>
       </div>
@@ -113,12 +118,13 @@
           <Link
             href={link.href}
             aria-current={isActive(link.href) ? 'page' : undefined}
-            class="-mb-px border-b-2 px-2 py-2.5 text-center text-sm font-medium transition-colors {isActive(
+            class="-mb-px flex flex-col items-center gap-0.5 border-b-2 px-2 py-2 text-center text-xs font-medium transition-colors {isActive(
               link.href,
             )
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'}"
           >
+            <link.icon size={20} weight={isActive(link.href) ? 'fill' : 'regular'} aria-hidden="true" />
             {link.label}
           </Link>
         {/each}
