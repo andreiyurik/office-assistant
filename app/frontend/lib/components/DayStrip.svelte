@@ -49,6 +49,7 @@
      phone, so below the medium breakpoint the strip scrolls sideways — today
      is the first item, so the days people actually pick stay in view. */
   .day-strip {
+    max-width: 100%;
     overflow-x: auto;
   }
 

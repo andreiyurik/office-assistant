@@ -45,7 +45,12 @@
     color: var(--cds-text-02);
   }
 
+  /* The controls keep their width when there is room and wrap to their own
+     line when there is not — but never wider than the page, or a scrolling
+     control inside them drags the whole layout sideways. */
   .page-header__controls {
     flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
   }
 </style>

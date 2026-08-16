@@ -1,16 +1,22 @@
 <script lang="ts">
-  import { Link } from '@inertiajs/svelte'
+  import { router } from '@inertiajs/svelte'
+  import {
+    breakpointObserver,
+    Button,
+    DataTable,
+    Tag,
+    Tile,
+    Toolbar,
+    ToolbarContent,
+    ToolbarSearch,
+  } from 'carbon-components-svelte'
+  import ArrowRight from 'carbon-icons-svelte/lib/ArrowRight.svelte'
+  import LocationFilled from 'carbon-icons-svelte/lib/LocationFilled.svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
-  import { asDate, initials } from '@/lib/format'
-  import { Button, Tag } from 'carbon-components-svelte'
+  import { asDate } from '@/lib/format'
   import { visitOnClick } from '@/lib/visit'
-  import LocationFilled from 'carbon-icons-svelte/lib/LocationFilled.svelte'
-  import Events from 'carbon-icons-svelte/lib/Events.svelte'
-  import ArrowRight from 'carbon-icons-svelte/lib/ArrowRight.svelte'
-  import ChevronRight from 'carbon-icons-svelte/lib/ChevronRight.svelte'
-  import UserMultiple from 'carbon-icons-svelte/lib/UserMultiple.svelte'
 
   type Person = {
     id: number
@@ -44,10 +50,38 @@
 
   const today = $derived(days[0])
 
-  // Teammates first, as their own group, when the list is not filtered by team.
-  const teammates = $derived(people.filter((person) => person.is_teammate))
-  const others = $derived(people.filter((person) => !person.is_teammate))
-  const grouped = $derived(!selected_team_id && teammates.length > 0 && others.length > 0)
+  // A four-column table is wider than a phone, and the column that would end up
+  // off screen is the one with the action. Carbon's own breakpoint store drops
+  // the team on a small screen: it is already the filter above the table, and
+  // the tag on the row says whether the person is a teammate.
+  const narrow = breakpointObserver().smallerThan('md')
+
+  // `as const` is not decoration: DataTable types a header key as a literal
+  // key of the row, so a widened string[] does not typecheck.
+  const allHeaders = [
+    { key: 'name', value: 'Сотрудник' },
+    { key: 'team_name', value: 'Команда' },
+    { key: 'desk', value: 'Место' },
+    // The last column holds the row action and has no heading of its own.
+    { key: 'near', empty: true },
+  ] as const
+
+  const headers = $derived($narrow ? allHeaders.filter((h) => h.key !== 'team_name') : allHeaders)
+
+  // Teammates first: the table has no row grouping, so the order carries what
+  // the two headings used to say and a tag repeats it on the row itself.
+  const rows = $derived(
+    [...people]
+      .sort((a, b) => Number(b.is_teammate) - Number(a.is_teammate))
+      .map((person) => ({
+        id: person.id,
+        name: person.name,
+        team_name: person.team_name,
+        desk: `${person.desk_name} · ${person.zone_name}`,
+        near: '',
+        person,
+      })),
+  )
 
   const description = $derived.by(() => {
     const when = selected_date === today ? 'Сегодня' : fullDate(selected_date)
@@ -55,6 +89,8 @@
     if (selected_team_id || teammates_count === 0) return `${when} в офисе ${count}.`
     return `${when} в офисе ${count}, из них ${teammates_count} из вашей команды.`
   })
+
+  const deskHref = $derived(`/desks?date=${selected_date}`)
 
   function fullDate(iso: string): string {
     return asDate(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
@@ -83,125 +119,175 @@
     <DayStrip {days} selected={selected_date} hrefFor={(day) => href(day, selected_team_id)} />
   </PageHeader>
 
-  <div
-    class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm {my_desk
-      ? 'border-success/30 bg-success/5'
-      : 'border-primary/20 bg-primary/5'}"
-  >
-    {#if my_desk}
-      <span class="flex items-center gap-2">
-        <LocationFilled size={20} class="text-success" aria-hidden="true" />
-        <span>Вы в офисе, место <span class="font-medium">{my_desk.name}</span> · {my_desk.zone_name}</span>
-      </span>
-      <Button kind="tertiary" size="small" href="/desks?date={selected_date}" onclick={visitOnClick(`/desks?date=${selected_date}`)}>
-        Изменить место
-      </Button>
-    {:else}
-      <span class="flex items-center gap-2">
-        <Events size={20} class="text-primary" aria-hidden="true" />
-        Вас нет в списке на этот день.
-      </span>
-      <Button size="small" href="/desks?date={selected_date}" onclick={visitOnClick(`/desks?date=${selected_date}`)}>
-        Забронировать место
-      </Button>
-    {/if}
+  <div class="status">
+    <Tile>
+      {#if my_desk}
+        <p>
+          <LocationFilled size={20} aria-hidden="true" />
+          <span>Вы в офисе, место <strong>{my_desk.name}</strong> · {my_desk.zone_name}</span>
+        </p>
+        <Button kind="tertiary" size="small" href={deskHref} onclick={visitOnClick(deskHref)}>
+          Изменить место
+        </Button>
+      {:else}
+        <p><span>Вас нет в списке на этот день.</span></p>
+        <Button size="small" href={deskHref} onclick={visitOnClick(deskHref)}>Забронировать место</Button>
+      {/if}
+    </Tile>
   </div>
 
-  <!-- On a phone the chips scroll sideways in one row instead of stacking. -->
-  <div class="-mx-4 mt-5 flex gap-1.5 overflow-x-auto px-4 pb-1 whitespace-nowrap sm:mx-0 sm:flex-wrap sm:px-0 sm:whitespace-normal" role="group" aria-label="Команда">
-    <Link
-      href={href(selected_date, null)}
-      aria-pressed={!selected_team_id}
-      class="rounded-full border px-3 py-1 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected_team_id
-        ? 'hover:bg-muted'
-        : 'border-primary/30 bg-primary/10 font-medium text-primary'}"
+  <!-- The teams stay a one-click filter rather than a select: six of them fit,
+       and picking one should cost the same as picking a day. -->
+  <div class="teams" role="group" aria-label="Команда">
+    <Tag
+      interactive
+      type={selected_team_id ? 'outline' : 'blue'}
+      onclick={() => router.visit(href(selected_date, null))}
     >
       Все команды
-    </Link>
+    </Tag>
     {#each teams as team (team.id)}
-      <Link
-        href={href(selected_date, team.id)}
-        aria-pressed={selected_team_id === team.id}
-        class="rounded-full border px-3 py-1 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {selected_team_id ===
-        team.id
-          ? 'border-primary/30 bg-primary/10 font-medium text-primary'
-          : 'hover:bg-muted'}"
+      <Tag
+        interactive
+        type={selected_team_id === team.id ? 'blue' : 'outline'}
+        onclick={() => router.visit(href(selected_date, team.id))}
       >
         {team.name}
-      </Link>
+      </Tag>
     {/each}
   </div>
 
   {#if people.length === 0}
-    <div class="mt-6 rounded-xl border border-dashed px-4 py-12 text-center">
-      <UserMultiple size={32} class="mx-auto text-muted-foreground/60" aria-hidden="true" />
-      <p class="mx-auto mt-3 max-w-sm text-sm text-muted-foreground">
-        {#if selected_team_id}
-          В этот день из выбранной команды никто не бронировал место.
-          Снимите фильтр, чтобы увидеть остальных.
-        {:else}
-          В этот день в офисе пока никого нет.
-          Забронируйте место на карте — коллеги увидят вас в списке.
-        {/if}
-      </p>
-      <Button kind="tertiary" size="small" href="/desks?date={selected_date}" onclick={visitOnClick(`/desks?date=${selected_date}`)}>
-        Открыть карту мест
-      </Button>
+    <div class="empty">
+      <Tile>
+        <p class="bx--type-body-long-01">
+          {#if selected_team_id}
+            В этот день из выбранной команды никто не бронировал место.
+            Снимите фильтр, чтобы увидеть остальных.
+          {:else}
+            В этот день в офисе пока никого нет.
+            Забронируйте место на карте — коллеги увидят вас в списке.
+          {/if}
+        </p>
+        <Button kind="tertiary" size="small" href={deskHref} onclick={visitOnClick(deskHref)}>
+          Открыть карту мест
+        </Button>
+      </Tile>
     </div>
-  {:else if grouped}
-    {@render group('Ваша команда', teammates)}
-    {@render group('Остальные', others)}
   {:else}
-    <ul class="mt-5 divide-y overflow-hidden rounded-xl border">
-      {#each people as person (person.id)}
-        {@render row(person)}
-      {/each}
-    </ul>
+    <div class="table">
+      <DataTable {headers} {rows} sortable>
+        <Toolbar size="sm">
+          <ToolbarContent>
+            <ToolbarSearch persistent shouldFilterRows placeholder="Поиск по имени или команде" />
+          </ToolbarContent>
+        </Toolbar>
+
+        {#snippet cell({ row, cell })}
+          {#if cell.key === 'name'}
+            <span class="name">
+              {row.person.name}
+              {#if row.person.is_me}
+                <Tag type="gray" size="sm">вы</Tag>
+              {:else if row.person.is_teammate}
+                <Tag type="blue" size="sm">{$narrow ? 'команда' : 'ваша команда'}</Tag>
+              {/if}
+            </span>
+          {:else if cell.key === 'near'}
+            {#if !row.person.is_me}
+              {@const target = `/desks?date=${selected_date}&near=${row.person.id}`}
+              <!-- Icon only on a phone: the label costs the width the desk
+                   column needs, and the tooltip still carries it. -->
+              <Button
+                kind="ghost"
+                size="small"
+                icon={ArrowRight}
+                iconDescription={$narrow ? `Сесть рядом с ${row.person.name}` : undefined}
+                tooltipPosition="left"
+                href={target}
+                onclick={visitOnClick(target)}
+              >
+                {#if !$narrow}Сесть рядом{/if}
+              </Button>
+            {/if}
+          {:else}
+            {cell.value}
+          {/if}
+        {/snippet}
+      </DataTable>
+    </div>
   {/if}
 </AppLayout>
 
-{#snippet group(label: string, list: Person[])}
-  <h2 class="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-    {label} <span class="ml-1 tabular-nums">{list.length}</span>
-  </h2>
-  <ul class="divide-y overflow-hidden rounded-xl border">
-    {#each list as person (person.id)}
-      {@render row(person)}
-    {/each}
-  </ul>
-{/snippet}
+<style>
+  .status {
+    margin-block-start: var(--cds-spacing-06);
+  }
 
-{#snippet row(person: Person)}
-  <li>
-    <Link
-      href="/desks?date={selected_date}&near={person.id}"
-      title="Открыть карту рядом с {person.name}"
-      class="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
-    >
-      <span
-        class="flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold {person.is_teammate
-          ? 'bg-primary/10 text-primary'
-          : 'bg-secondary text-secondary-foreground'}"
-        aria-hidden="true"
-      >
-        {initials(person.name)}
-      </span>
+  .status :global(.bx--tile) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--cds-spacing-05);
+  }
 
-      <span class="min-w-0 flex-1">
-        <span class="block truncate text-sm font-medium">
-          {person.name}{#if person.is_me}<span class="ml-1.5 text-xs font-normal text-muted-foreground">вы</span>{/if}
-        </span>
-        <span class="block truncate text-xs text-muted-foreground">{person.team_name}</span>
-      </span>
+  .status p {
+    display: flex;
+    align-items: center;
+    gap: var(--cds-spacing-03);
+  }
 
-      {#if !person.is_me}
-        <span class="hidden items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-primary sm:flex">
-          Сесть рядом <ArrowRight size={16} aria-hidden="true" />
-        </span>
-      {/if}
+  .status :global(svg) {
+    flex-shrink: 0;
+    fill: var(--cds-support-02);
+  }
 
-      <Tag type="gray">Место {person.desk_name} · {person.zone_name}</Tag>
-      <ChevronRight size={16} class="text-muted-foreground/60 sm:hidden" aria-hidden="true" />
-    </Link>
-  </li>
-{/snippet}
+  .empty {
+    margin-block-start: var(--cds-spacing-05);
+    max-width: 34rem;
+  }
+
+  .empty :global(.bx--tile) {
+    display: grid;
+    justify-items: start;
+    gap: var(--cds-spacing-05);
+  }
+
+  /* On a phone the chips keep to one row and scroll sideways, the way the day
+     strip above them does. Without flex-shrink the row squeezes them until
+     Carbon truncates the team names to one letter. */
+  .teams {
+    margin-block-start: var(--cds-spacing-05);
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .teams :global(.bx--tag) {
+    flex-shrink: 0;
+  }
+
+  /* Four columns are wider than a phone. Carbon scrolls the table inside its
+     own container rather than letting it push the page sideways. */
+  .table {
+    margin-block-start: var(--cds-spacing-05);
+    overflow-x: auto;
+  }
+
+  /* The name and its tag wrap rather than holding the column open: on a phone
+     that width comes out of the desk column, which is what the row is for. */
+  .name {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cds-spacing-03);
+  }
+
+  @media (min-width: 42rem) {
+    .teams {
+      flex-wrap: wrap;
+      overflow-x: visible;
+    }
+  }
+</style>

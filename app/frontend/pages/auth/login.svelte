@@ -79,6 +79,7 @@
           maxlength={72}
           hidePasswordLabel="Скрыть пароль"
           showPasswordLabel="Показать пароль"
+          tooltipAlignment="end"
           required
         />
 
