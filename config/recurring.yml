@@ -1,22 +1,6 @@
-# examples:
-#   periodic_cleanup:
-#     class: CleanSoftDeletedRecordsJob
-#     queue: background
-#     args: [ 1000, { batch_size: 500 } ]
-#     schedule: every hour
-#   periodic_cleanup_with_command:
-#     command: "SoftDeletedRecord.due.delete_all"
-#     priority: 2
-#     schedule: at 5am every day
-
-development:
-  release_abandoned_bookings:
-    class: ReleaseAbandonedBookingsJob
-    schedule: every minute
-  expand_recurring_schedules:
-    class: ExpandRecurringSchedulesJob
-    schedule: every day at 4am
-
+# Recurring jobs, run by the Solid Queue supervisor inside Puma. Production
+# only: in development the queue is not running, and the release job is invoked
+# by hand with `bin/rails office:release`.
 production:
   release_abandoned_bookings:
     class: ReleaseAbandonedBookingsJob
