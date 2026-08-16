@@ -302,26 +302,36 @@ teammates.reject { |user| present_ids.include?(user.id) }.first(missing).each do
 end
 
 # --- Three meetings that show auto-release ------------------------------------
-# All three sit in slots that have already started today, so nothing has to be
-# waited for. Before the office opens (or after it closes) they fall back to the
-# first slot of the day and the abandoned one is not yet due. (clock)
+# The three stories need three *different* slots that have already started, so
+# that clearing the room for one of them does not wipe another. Early in the
+# morning fewer than three slots have started; then the first three slots of the
+# day are used and the summary warns that the abandoned one is not yet due. (clock)
 
 today_slots = Booking.slot_starts_for(today)
 started_slots = today_slots.select { |slot| slot <= Time.current - Booking::RELEASE_AFTER }
 
-abandoned_slot = started_slots.last || today_slots.first
-checked_in_slot = started_slots[-2] || today_slots.first
-released_slot = started_slots.first || today_slots.first
+released_slot, checked_in_slot, abandoned_slot =
+  if started_slots.size >= 3
+    # The released one sits in the morning, where the "освободилось" marker is
+    # easy to find; the abandoned one is the slot that has just passed.
+    [ started_slots.first, started_slots[-2], started_slots.last ]
+  else
+    today_slots.first(3)
+  end
+
+demo_slots = [ released_slot, checked_in_slot, abandoned_slot ]
 
 abandoned_room, checked_in_room, released_room = rooms.first(3)
 
+# All three slots are emptied before anything is written into them: the three
+# stories must not delete each other.
+Booking.active.where(starts_at: demo_slots, resource: rooms).delete_all
+
 # Booked, started more than ten minutes ago, nobody checked in: this is the one
 # `bin/rails office:release` frees during the demo.
-Booking.active.where(starts_at: abandoned_slot, resource: rooms).delete_all
 Booking.create!(user: main_user, resource: abandoned_room, starts_at: abandoned_slot)
 
 # Checked in, so the same job must leave it alone.
-Booking.active.where(starts_at: checked_in_slot, resource: rooms).delete_all
 Booking.create!(
   user: checked_in_user,
   resource: checked_in_room,
@@ -332,7 +342,6 @@ Booking.create!(
 
 # Already released earlier today, so the "освободилось" marker is visible
 # without running anything.
-Booking.active.where(starts_at: released_slot, resource: rooms).delete_all
 Booking.create!(user: released_user, resource: released_room, starts_at: released_slot, state: "released")
 
 # --- Summary: what to show ----------------------------------------------------
@@ -354,3 +363,9 @@ puts "The auto-release story, all on #{today.strftime('%d.%m')}:"
 puts "  #{abandoned_room.name} #{abandoned_slot.strftime('%H:%M')} — #{main_user.name}, booked, no check-in: `bin/rails office:release` frees it"
 puts "  #{checked_in_room.name} #{checked_in_slot.strftime('%H:%M')} — #{checked_in_user.name}, checked in: the same job leaves it alone"
 puts "  #{released_room.name} #{released_slot.strftime('%H:%M')} — #{released_user.name}, already released, shown as 'освободилось'"
+
+if abandoned_slot > Time.current - Booking::RELEASE_AFTER
+  due_at = (abandoned_slot + Booking::RELEASE_AFTER).strftime("%H:%M")
+  puts "  ! It is #{Time.current.strftime('%H:%M')} and the office day has barely started: the abandoned"
+  puts "    booking is only due at #{due_at}, so `bin/rails office:release` frees nothing before then."
+end
