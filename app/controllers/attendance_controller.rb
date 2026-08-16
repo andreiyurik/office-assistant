@@ -24,19 +24,16 @@ class AttendanceController < ApplicationController
     end
 
     def my_desk_booking(date)
-      Booking.active.on_date(date)
-        .where(user: Current.user, resource_id: Resource.where(kind: "desk").select(:id))
+      Booking.active.desks.on_date(date)
+        .where(user: Current.user)
         .includes(resource: :zone)
         .first
     end
 
     # A person is in the office when they hold a desk for that day.
     def people_in_office(date)
-      bookings = Booking.active.on_date(date)
-        .joins(:user, :resource)
-        .includes(user: :team, resource: :zone)
-        .where(resources: { kind: "desk" })
-      bookings = bookings.where(users: { team_id: selected_team.id }) if selected_team
+      bookings = Booking.active.desks.on_date(date).includes(user: :team, resource: :zone)
+      bookings = bookings.joins(:user).where(users: { team_id: selected_team.id }) if selected_team
 
       people = bookings.map do |booking|
         {

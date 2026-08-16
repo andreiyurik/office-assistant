@@ -36,14 +36,14 @@ class RecurringSchedule < ApplicationRecord
   def apply!(from: Date.current)
     future_bookings(from)
       .reject { |booking| weekdays.include?(booking.starts_at.to_date.wday) }
-      .each { |booking| booking.update!(state: "cancelled") }
+      .each(&:cancel!)
 
     expand!(from: from)
   end
 
   # Called when the person turns the schedule off entirely.
   def cancel_future_bookings!(from: Date.current)
-    future_bookings(from).each { |booking| booking.update!(state: "cancelled") }
+    future_bookings(from).each(&:cancel!)
   end
 
   private

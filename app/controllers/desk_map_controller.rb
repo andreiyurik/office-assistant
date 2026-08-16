@@ -24,8 +24,7 @@ class DeskMapController < ApplicationController
   private
     # Active desk bookings of the day, keyed by desk.
     def desk_bookings(date)
-      Booking.active.on_date(date)
-        .where(resource_id: Resource.where(kind: "desk").select(:id))
+      Booking.active.desks.on_date(date)
         .includes(user: :team, resource: :zone)
         .index_by(&:resource_id)
     end

@@ -17,10 +17,7 @@ class RoomsController < ApplicationController
 
   private
     def room_bookings(date)
-      Booking.on_date(date)
-        .where(resource_id: Resource.where(kind: "room").select(:id))
-        .includes(:user, :resource)
-        .to_a
+      Booking.rooms.on_date(date).includes(:user, :resource).to_a
     end
 
     # Active bookings of the day collapsed back into meetings: a meeting longer

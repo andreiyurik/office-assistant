@@ -7,7 +7,7 @@ class DeskBookingsController < ApplicationController
     Booking.transaction do
       # Choosing another desk on a day you already have one is a move, not an
       # error: the old booking is cancelled and the new one takes its place.
-      desk_booking_on(date)&.update!(state: "cancelled")
+      desk_booking_on(date)&.cancel!
       raise ActiveRecord::Rollback unless booking.save
     end
 
@@ -27,15 +27,13 @@ class DeskBookingsController < ApplicationController
 
   def destroy
     booking = Current.user.bookings.find(params[:id])
-    booking.update!(state: "cancelled")
+    booking.cancel!
 
     redirect_to desks_path(date: booking.starts_at.to_date)
   end
 
   private
     def desk_booking_on(date)
-      Current.user.bookings.active.on_date(date)
-        .where(resource_id: Resource.where(kind: "desk").select(:id))
-        .first
+      Current.user.bookings.active.desks.on_date(date).first
     end
 end
