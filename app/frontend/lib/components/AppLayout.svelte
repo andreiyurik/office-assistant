@@ -52,6 +52,24 @@
       </nav>
 
       <div class="flex items-center gap-3">
+        <!-- The check-in prompt sits in the header row that already exists, so
+             the page below never moves when it appears. -->
+        {#if pending}
+          <button
+            type="button"
+            title="Переговорная {pending.room_name} в {time(pending.starts_at)}. Подтвердите, иначе слот освободится {releaseIn(
+              pending.releases_at,
+            )}."
+            onclick={() => checkIn(pending.id)}
+            class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+          >
+            Отметиться
+            <span class="ml-1.5 hidden text-xs opacity-80 md:inline">
+              {pending.room_name} · {time(pending.starts_at)}
+            </span>
+          </button>
+        {/if}
+
         <div class="text-right leading-tight">
           <div class="text-sm font-medium">{user.name}</div>
           <div class="text-xs text-muted-foreground">{user.team_name}</div>
@@ -67,25 +85,6 @@
       </div>
     </div>
 
-    {#if pending}
-      <div class="border-t bg-primary/10">
-        <div
-          class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-2 text-sm"
-        >
-          <span>
-            Переговорная {pending.room_name} в {time(pending.starts_at)} — подтвердите, что встреча
-            идёт. Иначе слот освободится {releaseIn(pending.releases_at)}.
-          </span>
-          <button
-            type="button"
-            onclick={() => checkIn(pending.id)}
-            class="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground transition-colors hover:bg-primary/80"
-          >
-            Отметиться
-          </button>
-        </div>
-      </div>
-    {/if}
   </header>
 
   <main class="mx-auto max-w-6xl px-4 py-6">
