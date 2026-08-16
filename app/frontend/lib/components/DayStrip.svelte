@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Link } from '@inertiajs/svelte'
+  import { asDate } from '@/lib/format'
 
   let {
     days,
@@ -10,10 +11,6 @@
     selected: string
     hrefFor: (day: string) => string
   } = $props()
-
-  function asDate(iso: string): Date {
-    return new Date(`${iso}T00:00:00`)
-  }
 </script>
 
 <div class="flex flex-wrap gap-1.5">

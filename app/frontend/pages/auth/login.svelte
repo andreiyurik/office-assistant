@@ -1,13 +1,11 @@
 <script lang="ts">
   import { Form } from '@inertiajs/svelte'
+  import { firstError } from '@/lib/format'
   import { Button } from '@/lib/components/ui/button'
 
   let { errors = {} }: { errors?: Record<string, string[] | string> } = $props()
 
-  function message(value: string[] | string | undefined): string | null {
-    if (!value) return null
-    return Array.isArray(value) ? value[0] : value
-  }
+  const error = $derived(firstError(errors))
 </script>
 
 <svelte:head>
@@ -20,9 +18,9 @@
     <p class="mt-1 text-sm text-muted-foreground">Бронирование мест и переговорных</p>
 
     <Form action="/session" method="post" class="mt-6 space-y-4">
-      {#if message(errors.login)}
+      {#if error}
         <p class="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {message(errors.login)}
+          {error}
         </p>
       {/if}
 

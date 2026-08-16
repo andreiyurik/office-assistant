@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { Link, page, router } from '@inertiajs/svelte'
+  import { time } from '@/lib/format'
   import type { CurrentUser, PendingCheckIn } from '@/types'
 
   let { children }: { children: Snippet } = $props()
@@ -18,10 +19,6 @@
   function isActive(href: string): boolean {
     const path = page.url.split('?')[0]
     return href === '/' ? path === '/' : path.startsWith(href)
-  }
-
-  function time(iso: string): string {
-    return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
   }
 
   function releaseIn(iso: string): string {

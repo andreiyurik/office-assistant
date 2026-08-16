@@ -2,6 +2,7 @@
   import { Link } from '@inertiajs/svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
+  import { asDate, initials } from '@/lib/format'
   import { Badge } from '@/lib/components/ui/badge'
 
   type Person = {
@@ -36,10 +37,6 @@
 
   const today = $derived(days[0])
 
-  function asDate(iso: string): Date {
-    return new Date(`${iso}T00:00:00`)
-  }
-
   function fullDate(iso: string): string {
     return asDate(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
   }
@@ -48,14 +45,6 @@
     const query = new URLSearchParams({ date })
     if (teamId) query.set('team_id', String(teamId))
     return `/?${query.toString()}`
-  }
-
-  function initials(name: string): string {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join('')
   }
 
   function peopleWord(count: number): string {

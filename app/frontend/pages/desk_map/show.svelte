@@ -3,6 +3,7 @@
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import Toast from '@/lib/components/Toast.svelte'
+  import { firstError, initials } from '@/lib/format'
 
   type TakenBy = {
     name: string
@@ -94,11 +95,7 @@
       .sort((a, b) => b.free_count - a.free_count)[0],
   )
 
-  function bookingError(): string | null {
-    const value = errors.booking
-    if (!value) return null
-    return Array.isArray(value) ? value[0] : value
-  }
+  const error = $derived(firstError(errors))
 
   function book(deskId: number): void {
     router.post(
@@ -110,14 +107,6 @@
 
   function cancel(bookingId: number): void {
     router.delete(`/desk_bookings/${bookingId}`, { preserveScroll: true })
-  }
-
-  function initials(name: string): string {
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join('')
   }
 
   function columns(zone: Zone): number {
@@ -312,5 +301,5 @@
     </aside>
   </div>
 
-  <Toast message={bookingError()} />
+  <Toast message={error} />
 </AppLayout>

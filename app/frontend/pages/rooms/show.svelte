@@ -3,6 +3,7 @@
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import Toast from '@/lib/components/Toast.svelte'
+  import { firstError, time } from '@/lib/format'
   import RoomCalendar, {
     type CalendarRoom,
     type CalendarMeeting,
@@ -41,15 +42,7 @@
 
   const myMeetings = $derived(meetings.filter((meeting) => meeting.mine))
 
-  function time(iso: string): string {
-    return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-  }
-
-  function bookingError(): string | null {
-    const value = errors.booking
-    if (!value) return null
-    return Array.isArray(value) ? value[0] : value
-  }
+  const error = $derived(firstError(errors))
 
   function book(roomId: number, startsAt: string, slots: number): void {
     router.post(
@@ -163,5 +156,5 @@
     </aside>
   </div>
 
-  <Toast message={bookingError()} />
+  <Toast message={error} />
 </AppLayout>
