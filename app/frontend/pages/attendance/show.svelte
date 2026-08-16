@@ -200,7 +200,7 @@
         </span>
       {/if}
 
-      <Badge variant="secondary" class="shrink-0 tabular-nums">
+      <Badge variant="secondary" class="shrink-0 tabular-nums sm:min-w-40 sm:justify-start">
         <span class="hidden sm:inline">Место&nbsp;</span>{person.desk_name} · {person.zone_name}
       </Badge>
       <CaretRightIcon size={16} class="text-muted-foreground/60 sm:hidden" aria-hidden="true" />

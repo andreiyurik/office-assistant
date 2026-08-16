@@ -229,6 +229,15 @@
     overflow: hidden;
   }
 
+  /* Hour labels sit just below their line instead of centred on it, so the
+     first one (09:00) fits under the header — the library hides it otherwise. */
+  .room-calendar :global(.ec-body .ec-sidebar .ec-slot) {
+    inset-block-start: 0.2rem;
+  }
+  .room-calendar :global(.ec-body .ec-sidebar .ec-slot.ec-hidden) {
+    visibility: visible;
+  }
+
   .room-calendar :global(.ec-event) {
     border-radius: calc(var(--radius) - 4px);
     padding: 2px 6px;

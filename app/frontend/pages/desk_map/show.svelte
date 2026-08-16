@@ -131,7 +131,7 @@
       return 'bg-primary/10 text-primary border-primary/40 font-medium cursor-default'
     }
     if (desk.taken_by) {
-      return 'bg-muted/60 text-muted-foreground/70 border-transparent cursor-default'
+      return 'bg-muted text-muted-foreground border-transparent cursor-default'
     }
     return 'bg-background hover:border-primary/60 hover:bg-primary/5 hover:shadow-sm cursor-pointer'
   }
@@ -261,7 +261,7 @@
           коллега по команде
         </span>
         <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded bg-muted"></span> занято
+          <span class="size-3.5 rounded border bg-muted"></span> занято
         </span>
         <span class="flex items-center gap-2">
           <span class="flex size-3.5 items-center justify-center rounded border"><StarIcon size={9} weight="fill" aria-hidden="true" /></span>

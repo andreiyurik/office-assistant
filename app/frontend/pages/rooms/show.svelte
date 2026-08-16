@@ -111,7 +111,7 @@
           <span class="size-3.5 rounded bg-[oklch(0.72_0.16_70)]"></span> пора отметиться
         </span>
         <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded bg-muted"></span> занято или время прошло
+          <span class="size-3.5 rounded border bg-muted"></span> занято или время прошло
         </span>
         <span class="flex items-center gap-2 pt-1">
           <ArrowCounterClockwiseIcon size={14} aria-hidden="true" />
@@ -160,7 +160,7 @@
                 </span>
               {/if}
 
-              <Button variant="ghost" size="sm" class="text-muted-foreground" onclick={() => cancel(meeting)}>
+              <Button variant="ghost" size="sm" class="ml-auto text-muted-foreground" onclick={() => cancel(meeting)}>
                 Отменить
               </Button>
             </div>
