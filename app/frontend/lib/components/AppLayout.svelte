@@ -40,7 +40,8 @@
         <div class="flex min-w-0 items-center gap-6">
           <Link href="/" class="flex shrink-0 items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
             <BrandMark />
-            <span class="text-sm font-semibold tracking-tight">Office Assistant</span>
+            <!-- On a phone the check-in button needs the room: the name yields to it. -->
+            <span class="text-sm font-semibold tracking-tight {pending ? 'hidden sm:inline' : ''}">Office Assistant</span>
           </Link>
 
           <!-- Desktop: pills next to the brand. Phone: the tab row below. -->

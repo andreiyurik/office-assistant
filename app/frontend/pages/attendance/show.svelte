@@ -79,7 +79,7 @@
   </PageHeader>
 
   <div
-    class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm {my_desk
+    class="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm {my_desk
       ? 'border-success/30 bg-success/5'
       : 'border-primary/20 bg-primary/5'}"
   >
