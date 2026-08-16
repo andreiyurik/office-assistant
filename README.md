@@ -17,6 +17,7 @@
 
 - Ruby on Rails 8, `inertia_rails`, Vite
 - Svelte 5 (runes) + TypeScript, shadcn-svelte, Tailwind CSS
+- EventCalendar (`@event-calendar/core`) — сетка переговорных
 - PostgreSQL 17 (локально — контейнер из `compose.yml`, в проде — accessory Kamal)
 - Solid Queue для фоновых задач, Solid Cache для кеша
 - Встроенная аутентификация Rails 8

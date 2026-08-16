@@ -4,6 +4,8 @@ class Booking < ApplicationRecord
   SLOT = SLOT_MINUTES.minutes
   OPEN_HOUR = 9
   CLOSE_HOUR = 19
+  # The longest meeting one booking can take: three slots, an hour and a half.
+  MAX_MEETING_SLOTS = 3
 
   # A room booking nobody checked in to is released this long after the slot
   # started. Ten minutes is the same threshold Robin uses by default.

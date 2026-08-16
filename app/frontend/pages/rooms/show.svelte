@@ -3,29 +3,16 @@
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import Toast from '@/lib/components/Toast.svelte'
+  import RoomCalendar, {
+    type CalendarRoom,
+    type CalendarMeeting,
+    type ReleasedSlot,
+  } from '@/lib/components/RoomCalendar.svelte'
 
-  type Cell = {
-    state: 'free' | 'taken' | 'mine'
-    person: string | null
-    checked_in: boolean
-    continuation: boolean
-    released: boolean
-    past: boolean
-  }
-
-  type Room = {
-    id: number
-    name: string
-    capacity: number
-    cells: Cell[]
-  }
-
-  type Meeting = {
-    id: number
+  // A meeting as the sidebar sees it: the calendar fields plus what is needed
+  // to check in or cancel.
+  type Meeting = CalendarMeeting & {
     room_name: string
-    starts_at: string
-    ends_at: string
-    checked_in: boolean
     can_check_in: boolean
     check_in_opens_at: string
   }
@@ -33,36 +20,26 @@
   let {
     selected_date,
     days,
-    slots,
+    hours,
+    slot_minutes,
+    max_slots,
     rooms,
-    my_meetings,
+    meetings,
+    released_slots,
     errors = {},
   }: {
     selected_date: string
     days: string[]
-    slots: string[]
-    rooms: Room[]
-    my_meetings: Meeting[]
+    hours: { open: number; close: number }
+    slot_minutes: number
+    max_slots: number
+    rooms: CalendarRoom[]
+    meetings: Meeting[]
+    released_slots: ReleasedSlot[]
     errors?: Record<string, string[] | string>
   } = $props()
 
-  const durations = [
-    { slots: 1, short: '30 мин' },
-    { slots: 2, short: '1 ч' },
-    { slots: 3, short: '1,5 ч' },
-  ]
-
-  let duration = $state(1)
-  let hovered: { roomId: number; index: number } | null = $state(null)
-
-  // The slot happening right now, so the eye lands on it first. Negative on any
-  // day other than today.
-  const nowIndex = $derived(
-    slots.findIndex((slot) => {
-      const start = new Date(slot).getTime()
-      return Date.now() >= start && Date.now() < start + 30 * 60 * 1000
-    }),
-  )
+  const myMeetings = $derived(meetings.filter((meeting) => meeting.mine))
 
   function time(iso: string): string {
     return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
@@ -74,25 +51,10 @@
     return Array.isArray(value) ? value[0] : value
   }
 
-  // A slot can be taken only if the whole chosen duration fits after it.
-  function canBook(room: Room, index: number): boolean {
-    for (let step = 0; step < duration; step++) {
-      const cell = room.cells[index + step]
-      if (!cell || cell.state !== 'free' || cell.past) return false
-    }
-    return true
-  }
-
-  function isPreviewed(room: Room, index: number): boolean {
-    if (!hovered || hovered.roomId !== room.id) return false
-    return index >= hovered.index && index < hovered.index + duration
-  }
-
-  function book(room: Room, index: number): void {
-    if (!canBook(room, index)) return
+  function book(roomId: number, startsAt: string, slots: number): void {
     router.post(
       '/room_bookings',
-      { resource_id: room.id, starts_at: slots[index], slots: duration },
+      { resource_id: roomId, starts_at: startsAt, slots },
       { preserveScroll: true },
     )
   }
@@ -103,33 +65,6 @@
 
   function cancel(meeting: Meeting): void {
     router.delete(`/room_bookings/${meeting.id}`, { preserveScroll: true })
-  }
-
-  function cellClasses(room: Room, index: number): string {
-    const cell = room.cells[index]
-
-    if (cell.state === 'mine') {
-      return cell.checked_in
-        ? 'bg-primary text-primary-foreground'
-        : 'bg-primary/80 text-primary-foreground'
-    }
-    if (cell.state === 'taken') return 'bg-muted text-muted-foreground'
-    if (cell.past) return 'slot-past text-muted-foreground/60'
-    if (isPreviewed(room, index)) return 'bg-primary/20'
-    if (canBook(room, index)) return 'bg-background hover:bg-primary/10 cursor-pointer'
-    return 'bg-background text-muted-foreground/60'
-  }
-
-  function cellTitle(room: Room, index: number): string {
-    const cell = room.cells[index]
-    const at = `${room.name}, ${time(slots[index])}`
-
-    if (cell.state === 'mine') return `${at} — ваша бронь`
-    if (cell.state === 'taken') return `${at} — ${cell.person}`
-    if (cell.past) return `${at} — время прошло`
-    if (cell.released) return `${at} — бронь освободилась автоматически, слот снова свободен`
-    if (!canBook(room, index)) return `${at} — выбранная длительность сюда не помещается`
-    return `${at} — свободно, нажмите чтобы забронировать`
   }
 </script>
 
@@ -143,104 +78,39 @@
     <DayStrip {days} selected={selected_date} hrefFor={(day) => `/rooms?date=${day}`} />
   </div>
 
-  <!-- The grid keeps its place: everything that appears and disappears —
+  <!-- The calendar keeps its place: everything that appears and disappears —
        bookings, hints, messages — lives in the sidebar or floats above. -->
   <div class="mt-4 flex flex-col items-start gap-4 md:flex-row">
     <div class="w-full min-w-0 flex-1">
-      <div class="overflow-x-auto rounded-lg border">
-      <table class="w-full border-collapse text-sm">
-        <thead>
-          <tr class="border-b">
-            <th class="w-16 px-2 py-2 text-left text-xs font-medium text-muted-foreground">Время</th>
-            {#each rooms as room (room.id)}
-              <th class="border-l px-2 py-2 text-left font-medium">
-                {room.name}
-                <span class="ml-1 text-xs font-normal text-muted-foreground">{room.capacity} мест</span>
-              </th>
-            {/each}
-          </tr>
-        </thead>
-        <tbody>
-          {#each slots as slot, index (slot)}
-            <tr
-              class="border-b last:border-b-0 {index === nowIndex
-                ? 'border-t-2 border-t-primary'
-                : ''}"
-            >
-              <td
-                class="px-2 py-0 text-xs tabular-nums {index === nowIndex
-                  ? 'font-semibold text-foreground'
-                  : 'text-muted-foreground'}"
-              >
-                {index === nowIndex || index % 2 === 0 ? time(slot) : ''}
-              </td>
-              {#each rooms as room (room.id)}
-                <td class="border-l p-0">
-                  <button
-                    type="button"
-                    title={cellTitle(room, index)}
-                    disabled={!canBook(room, index)}
-                    onclick={() => book(room, index)}
-                    onmouseenter={() => (hovered = { roomId: room.id, index })}
-                    onmouseleave={() => (hovered = null)}
-                    class="flex h-8 w-full items-center gap-1.5 px-2 text-left text-xs transition-colors {cellClasses(
-                      room,
-                      index,
-                    )}"
-                  >
-                    {#if room.cells[index].continuation}
-                      <!-- the meeting started in the slot above, drawn as one block -->
-                    {:else if room.cells[index].state === 'mine'}
-                      <span class="font-medium">
-                        {room.cells[index].checked_in ? '✓ вы' : 'вы'}
-                      </span>
-                    {:else if room.cells[index].state === 'taken'}
-                      <span class="truncate">{room.cells[index].person}</span>
-                    {:else if room.cells[index].released}
-                      <span class="text-[10px] text-muted-foreground">освободилось</span>
-                    {/if}
-                  </button>
-                </td>
-              {/each}
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </div>
+      <RoomCalendar
+        date={selected_date}
+        {hours}
+        slotMinutes={slot_minutes}
+        maxSlots={max_slots}
+        {rooms}
+        {meetings}
+        releasedSlots={released_slots}
+        onBook={book}
+      />
     </div>
 
     <aside class="w-full shrink-0 space-y-3 md:w-64">
       <section class="rounded-lg border p-3">
-        <h2 class="text-sm font-medium">Бронирую на</h2>
-        <div class="mt-2 grid grid-cols-3 gap-1">
-          {#each durations as option (option.slots)}
-            <button
-              type="button"
-              onclick={() => (duration = option.slots)}
-              class="rounded-md border px-2 py-1 text-xs transition-colors {duration === option.slots
-                ? 'border-foreground bg-foreground text-background'
-                : 'hover:bg-muted'}"
-            >
-              {option.short}
-            </button>
-          {/each}
-        </div>
-        <p class="mt-2 text-xs text-muted-foreground">
-          Нажмите на свободный слот в сетке.
-          {#if nowIndex >= 0}
-            Сегодня доступно время с {time(slots[nowIndex])}: более раннее уже прошло.
-          {/if}
+        <h2 class="text-sm font-medium">Как забронировать</h2>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Нажмите на свободное время — это {slot_minutes} минут. Протяните вниз, чтобы занять
+          больше: до {(max_slots * slot_minutes) / 60} ч подряд.
         </p>
       </section>
 
       <section class="rounded-lg border p-3">
         <h2 class="text-sm font-medium">Ваши брони</h2>
 
-        {#if my_meetings.length === 0}
+        {#if myMeetings.length === 0}
           <p class="mt-1 text-xs text-muted-foreground">На этот день броней нет.</p>
         {:else}
           <ul class="mt-2 space-y-3">
-            {#each my_meetings as meeting (meeting.id)}
+            {#each myMeetings as meeting (meeting.id)}
               <li>
                 <p class="text-sm">
                   <span class="font-medium">{meeting.room_name}</span>
@@ -286,7 +156,7 @@
           <span class="size-3 rounded bg-primary"></span> ваша бронь
         </span>
         <span class="flex items-center gap-1.5">
-          <span class="size-3 rounded bg-muted"></span> занято
+          <span class="size-3 rounded bg-muted"></span> занято или время прошло
         </span>
         <p>«освободилось» — бронь сняли автоматически, никто не отметился</p>
       </section>

@@ -1,10 +1,8 @@
 class RoomBookingsController < ApplicationController
-  MAX_SLOTS = 3
-
   def create
     room = Resource.rooms.find(params[:resource_id])
     starts_at = slot_start
-    slots = params[:slots].to_i.clamp(1, MAX_SLOTS)
+    slots = params[:slots].to_i.clamp(1, Booking::MAX_MEETING_SLOTS)
 
     Booking.book_meeting!(user: Current.user, room: room, starts_at: starts_at, slots: slots)
 
