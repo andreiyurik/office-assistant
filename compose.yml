@@ -1,0 +1,21 @@
+# Local infrastructure only. The app itself runs on the host via `bin/dev`;
+# this file gives it a PostgreSQL server: `docker compose up -d db`.
+# Credentials match the defaults in config/database.yml.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:

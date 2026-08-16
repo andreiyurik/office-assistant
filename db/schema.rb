@@ -11,6 +11,9 @@
 # It's strongly recommended that you check this file into your version control system.
 
 ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "pg_catalog.plpgsql"
+
   create_table "bookings", force: :cascade do |t|
     t.datetime "checked_in_at"
     t.datetime "created_at", null: false
@@ -22,10 +25,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.index ["group_id"], name: "index_bookings_on_group_id"
-    t.index ["resource_id", "starts_at"], name: "index_bookings_on_active_resource_slot", unique: true, where: "state IN ('booked', 'checked_in')"
+    t.index ["resource_id", "starts_at"], name: "index_bookings_on_active_resource_slot", unique: true, where: "((state)::text = ANY ((ARRAY['booked'::character varying, 'checked_in'::character varying])::text[]))"
     t.index ["resource_id"], name: "index_bookings_on_resource_id"
     t.index ["starts_at"], name: "index_bookings_on_starts_at"
-    t.index ["user_id", "starts_at"], name: "index_bookings_on_active_user_slot", unique: true, where: "state IN ('booked', 'checked_in')"
+    t.index ["user_id", "starts_at"], name: "index_bookings_on_active_user_slot", unique: true, where: "((state)::text = ANY ((ARRAY['booked'::character varying, 'checked_in'::character varying])::text[]))"
     t.index ["user_id"], name: "index_bookings_on_user_id"
   end
 
@@ -50,7 +53,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.integer "zone_id", null: false
-    t.index ["grid_row", "grid_col"], name: "index_desks_on_grid_cell", unique: true, where: "kind = 'desk'"
+    t.index ["grid_row", "grid_col"], name: "index_desks_on_grid_cell", unique: true, where: "((kind)::text = 'desk'::text)"
     t.index ["kind"], name: "index_resources_on_kind"
     t.index ["zone_id"], name: "index_resources_on_zone_id"
   end

@@ -28,13 +28,13 @@ When in doubt, choose the more boring implementation.
 - Ruby on Rails 8, `inertia_rails`, Vite
 - Svelte 5 (runes) + TypeScript
 - shadcn-svelte + Tailwind CSS (comes with the Inertia Svelte starter kit)
-- SQLite in development and production
+- PostgreSQL in development (Docker Compose) and production (Kamal accessory)
 - Solid Queue for background jobs, Solid Cache for cache — **no Redis, no Sidekiq**
 - Rails 8 built-in authentication generator — **not Devise**
 - Kamal for deployment
 - Minitest (Rails default) — not RSpec
 
-Do not add Postgres, Redis, Zod, Superforms, Formsnap, or any state-management
+Do not add Redis, Zod, Superforms, Formsnap, or any state-management
 library. Superforms and Formsnap are SvelteKit-only and will not work here:
 validation lives in Rails models and errors arrive in components automatically
 through Inertia.
@@ -58,9 +58,9 @@ raise it as a question — do not build it.
   were never checked in. This is the core mechanic of the product; keep it
   simple and keep it tested.
 - Uniqueness must be enforced **at the database level**, not only in model
-  validations. SQLite serialises writes, so a validation plus a unique index is
-  sufficient here; note in `DECISIONS.md` that on Postgres this would be an
-  exclusion constraint over a time range.
+  validations. Fixed slots make a plain unique index on `(resource_id, slot_start)`
+  a complete guarantee; an exclusion constraint over a time range would only be
+  needed if bookings ever became arbitrary intervals. Do not add one.
 
 ## Code conventions
 

@@ -17,7 +17,7 @@
 
 - Ruby on Rails 8, `inertia_rails`, Vite
 - Svelte 5 (runes) + TypeScript, shadcn-svelte, Tailwind CSS
-- SQLite в разработке и в проде
+- PostgreSQL 17 (локально — контейнер из `compose.yml`, в проде — accessory Kamal)
 - Solid Queue для фоновых задач, Solid Cache для кеша
 - Встроенная аутентификация Rails 8
 - Kamal для деплоя
@@ -25,9 +25,10 @@
 
 ## Как запустить
 
-Нужны Ruby (версия в `.ruby-version`) и Node 20+.
+Нужны Ruby (версия в `.ruby-version`), Node 20+ и Docker (только ради Postgres).
 
 ```bash
+docker compose up -d db   # PostgreSQL на localhost:5432, логин/пароль postgres/postgres
 bin/setup --skip-server   # гемы, npm-пакеты, база, миграции
 bin/rails db:seed         # демо-офис: 60 человек, 40 мест, 6 переговорных
 bin/dev                   # Rails на :3000 и Vite на :3036
@@ -119,7 +120,13 @@ bin/kamal setup     # первый деплой
 bin/kamal deploy    # последующие
 ```
 
-Все четыре базы SQLite (основная, кеш, очередь, Action Cable) лежат в `storage/`
-и переживают деплой за счёт тома `office_assistant_storage`. Фоновые задачи
-выполняются внутри процесса Puma — за это отвечает `SOLID_QUEUE_IN_PUMA: true`;
-отдельная машина под задачи при такой нагрузке не нужна.
+Postgres поднимается рядом с приложением как accessory Kamal (`accessories.db`
+в `config/deploy.yml`) и хранит данные в каталоге на сервере. Пароль задаётся
+переменной окружения `POSTGRES_PASSWORD` на машине, откуда запускается деплой, —
+`.kamal/secrets` пробрасывает его и в контейнер базы, и в приложение. Все четыре
+базы Rails 8 (основная, кеш, очередь, Action Cable) живут в одном сервере
+Postgres; `db:prepare` в `bin/docker-entrypoint` создаёт их при первом запуске.
+
+Фоновые задачи выполняются внутри процесса Puma — за это отвечает
+`SOLID_QUEUE_IN_PUMA: true`; отдельная машина под задачи при такой нагрузке не
+нужна.
