@@ -144,23 +144,35 @@
   {:else}
     <ul class="mt-4 divide-y rounded-lg border">
       {#each people as person (person.id)}
-        <li class="flex items-center gap-3 px-4 py-2.5 {person.is_teammate ? 'bg-muted/40' : ''}">
-          <span
-            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
+        <li class={person.is_teammate ? 'bg-muted/40' : ''}>
+          <Link
+            href="/desks?date={selected_date}&near={person.id}"
+            title="Открыть карту рядом с {person.name}"
+            class="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted"
           >
-            {initials(person.name)}
-          </span>
-
-          <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-medium">
-              {person.name}{#if person.is_me}<span class="ml-1.5 text-xs text-muted-foreground">вы</span>{/if}
+            <span
+              class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-medium text-secondary-foreground"
+            >
+              {initials(person.name)}
             </span>
-            <span class="block truncate text-xs text-muted-foreground">{person.team_name}</span>
-          </span>
 
-          <Badge variant="secondary" class="shrink-0">
-            Место {person.desk_name} · {person.zone_name}
-          </Badge>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-medium">
+                {person.name}{#if person.is_me}<span class="ml-1.5 text-xs text-muted-foreground">вы</span>{/if}
+              </span>
+              <span class="block truncate text-xs text-muted-foreground">{person.team_name}</span>
+            </span>
+
+            {#if !person.is_me}
+              <span class="hidden text-xs text-muted-foreground group-hover:text-foreground sm:inline">
+                Сесть рядом →
+              </span>
+            {/if}
+
+            <Badge variant="secondary" class="shrink-0">
+              Место {person.desk_name} · {person.zone_name}
+            </Badge>
+          </Link>
         </li>
       {/each}
     </ul>

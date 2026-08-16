@@ -16,7 +16,15 @@
     row: number
     col: number
     is_default: boolean
+    is_near_target: boolean
     taken_by: TakenBy | null
+  }
+
+  type Near = {
+    name: string
+    desk_id: number | null
+    desk_name: string | null
+    zone_id: number | null
   }
 
   type Zone = {
@@ -33,6 +41,7 @@
     selected_date,
     days,
     zones,
+    near,
     my_booking,
     default_desk,
     recurring,
@@ -41,6 +50,7 @@
     selected_date: string
     days: string[]
     zones: Zone[]
+    near: Near | null
     my_booking: { id: number; desk_id: number; desk_name: string; zone_name: string } | null
     default_desk: { id: number; name: string; zone_name: string; free: boolean } | null
     recurring: { weekdays: number[]; desk_id: number; desk_name: string } | null
@@ -76,6 +86,7 @@
   }
 
   const myZone = $derived(zones.find((zone) => zone.is_mine))
+  const nearZone = $derived(near ? zones.find((zone) => zone.id === near.zone_id) : undefined)
   const roomiest = $derived(
     zones
       .filter((zone) => !zone.is_mine && zone.free_count > 0)
@@ -210,6 +221,22 @@
     </p>
   {/if}
 
+  {#if near}
+    <p class="mt-3 rounded-md bg-muted px-3 py-2 text-sm">
+      {#if nearZone && near.desk_name}
+        <span class="font-medium">{near.name}</span> сидит на месте {near.desk_name} в зоне
+        {nearZone.name} — оно обведено на карте.
+        {#if nearZone.free_count > 0}
+          Рядом свободно мест: {nearZone.free_count}.
+        {:else}
+          Свободных мест в этой зоне не осталось — выберите соседнюю.
+        {/if}
+      {:else}
+        <span class="font-medium">{near.name}</span> не бронировал место на этот день.
+      {/if}
+    </p>
+  {/if}
+
   {#if myZone && myZone.free_count === 0}
     <p class="mt-3 rounded-md bg-muted px-3 py-2 text-sm">
       В зоне {myZone.name}, где сидит ваша команда, свободных мест нет.
@@ -262,7 +289,7 @@
               style="grid-row: {desk.row - zone.min_row + 1}; grid-column: {desk.col - zone.min_col + 1}"
               class="relative flex aspect-square flex-col items-center justify-center rounded-lg border text-sm transition-colors {deskClasses(
                 desk,
-              )}"
+              )} {desk.is_near_target ? 'ring-2 ring-foreground ring-offset-2' : ''}"
             >
               {#if desk.taken_by}
                 <span class="text-xs font-medium">{initials(desk.taken_by.name)}</span>
