@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_16_182018) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -38,7 +38,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
     t.datetime "updated_at", null: false
     t.integer "user_id", null: false
     t.date "valid_from", null: false
-    t.date "valid_to"
     t.json "weekdays", default: [], null: false
     t.index ["resource_id"], name: "index_recurring_schedules_on_resource_id"
     t.index ["user_id"], name: "index_recurring_schedules_on_user_id", unique: true
@@ -79,9 +78,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_15_170006) do
     t.datetime "created_at", null: false
     t.integer "default_desk_id"
     t.string "email_address", null: false
-    t.string "name"
+    t.string "name", null: false
     t.string "password_digest", null: false
-    t.integer "team_id"
+    t.integer "team_id", null: false
     t.datetime "updated_at", null: false
     t.index ["default_desk_id"], name: "index_users_on_default_desk_id"
     t.index ["email_address"], name: "index_users_on_email_address", unique: true

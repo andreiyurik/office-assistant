@@ -1,7 +1,7 @@
 class AddOfficeFieldsToUsers < ActiveRecord::Migration[8.1]
-  # SQLite refuses to add a NOT NULL column to an existing table without a
-  # default value, so these stay nullable in the database and are required by
-  # the User model instead.
+  # Added to a table that already has rows, so they start nullable;
+  # RequireTeamAndNameForUsers tightens name and team_id once the seeds fill
+  # them in. default_desk stays optional on purpose: not everyone has one.
   def change
     add_column :users, :name, :string
     add_reference :users, :team, foreign_key: true

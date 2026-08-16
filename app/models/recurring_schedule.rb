@@ -14,8 +14,8 @@ class RecurringSchedule < ApplicationRecord
 
   # The dates this schedule covers inside the horizon.
   def dates(from: Date.current, horizon: HORIZON)
-    first = [ from, valid_from ].compact.max
-    last = [ from + horizon, valid_to ].compact.min
+    first = [ from, valid_from ].max
+    last = from + horizon
     return [] if last < first
 
     (first..last).select { |date| weekdays.include?(date.wday) }
