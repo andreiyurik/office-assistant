@@ -146,6 +146,13 @@ bin/kamal logs      # хвост логов приложения
 
 Сейчас приложение развёрнуто на `https://201-24-48-232.sslip.io`.
 
+На самом сервере руками сделано одно: SSH только по ключу
+(`/etc/ssh/sshd_config.d/10-keys-only.conf` — `PasswordAuthentication no`,
+`PermitRootLogin prohibit-password`) и машина, с которой идёт деплой, внесена в
+`PerSourcePenaltyExemptList`: новый OpenSSH штрафует источник за всплески
+соединений, а Kamal открывает их несколько сразу — без исключения деплой ловил
+таймауты. Всё остальное на сервере ставит и настраивает `kamal setup`.
+
 Postgres поднимается рядом с приложением как accessory Kamal (`accessories.db`
 в `config/deploy.yml`) и хранит данные в каталоге на сервере. Пароль лежит в
 файле `.kamal/postgres_password` на машине, откуда идёт деплой (файл в
