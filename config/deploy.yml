@@ -7,7 +7,7 @@ image: office_assistant
 # Deploy to these servers.
 servers:
   web:
-    - 192.168.0.1
+    - 201.24.48.232
   # job:
   #   hosts:
   #     - 192.168.0.1
@@ -17,14 +17,16 @@ servers:
 # The other half of this decision is config.assume_ssl and config.force_ssl in
 # config/environments/production.rb: the two have to stay switched on together,
 # otherwise cookies travel without the secure flag.
-# Put your own domain in `host` — the certificate is issued for it.
+# Put your own domain in `host` — the certificate is issued for it. Until there
+# is one, sslip.io turns the server's IP into a hostname Let's Encrypt accepts.
 proxy:
   ssl: true
-  host: office.example.com
+  host: 201-24-48-232.sslip.io
 
-# Where you keep your container images.
+# Where you keep your container images. localhost:5555 is Kamal's local
+# registry: the image is built and stored on the deploying machine and the
+# server pulls it through the SSH connection — no Docker Hub account needed.
 registry:
-  # Alternatives: hub.docker.com / registry.digitalocean.com / ghcr.io / ...
   server: localhost:5555
 
   # Needed for authenticated registries.
@@ -67,6 +69,9 @@ aliases:
   shell: app exec --interactive --reuse "bash"
   logs: app logs -f
   dbc: app exec --interactive --reuse "bin/rails dbconsole --include-password"
+  # Demo helpers: rebuild the demo office, and run the release job by hand.
+  seed: app exec --reuse "bin/rails db:seed"
+  release: app exec --reuse "bin/rails office:release"
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
