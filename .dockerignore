@@ -49,3 +49,7 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Ignore Vite dev/test build outputs; production assets are built inside the image.
+/public/vite-dev
+/public/vite-test
