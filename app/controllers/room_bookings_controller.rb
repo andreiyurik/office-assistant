@@ -19,20 +19,19 @@ class RoomBookingsController < ApplicationController
   end
 
   def check_in
-    booking = Current.user.bookings.find(params[:id])
+    booking = Current.user.bookings.rooms.find(params[:id])
 
-    if booking.check_in_open?
-      booking.check_in!
+    if booking.check_in!
       redirect_to rooms_path(date: booking.starts_at.to_date)
     else
       redirect_to rooms_path(date: booking.starts_at.to_date), inertia: {
-        errors: { booking: "Отметиться можно за 10 минут до начала слота и до его окончания." }
+        errors: { booking: "Отметиться можно за 10 минут до начала встречи и до её окончания." }
       }
     end
   end
 
   def destroy
-    booking = Current.user.bookings.find(params[:id])
+    booking = Current.user.bookings.rooms.find(params[:id])
     booking.cancel_meeting!
 
     redirect_to rooms_path(date: booking.starts_at.to_date)

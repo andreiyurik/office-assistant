@@ -35,13 +35,7 @@ class ApplicationController < ActionController::Base
     def pending_check_in_props
       return nil if Current.user.nil?
 
-      booking = Current.user.bookings
-        .where(state: "booked", resource_id: Resource.where(kind: "room").select(:id))
-        .where(starts_at: ..(Time.current + Booking::CHECK_IN_OPENS_BEFORE))
-        .where(ends_at: Time.current..)
-        .includes(:resource)
-        .order(:starts_at)
-        .first
+      booking = Booking.pending_check_in_for(Current.user)
       return nil if booking.nil?
 
       {

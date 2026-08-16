@@ -51,7 +51,9 @@ class RoomsController < ApplicationController
           mine: mine,
           person: mine ? nil : first.user.name,
           checked_in: slots.any?(&:checked_in?),
-          can_check_in: mine && first.check_in_open?,
+          # One check-in covers the meeting, so the button stays available
+          # while any of its slots is still open.
+          can_check_in: mine && slots.any?(&:check_in_open?),
           check_in_opens_at: (first.starts_at - Booking::CHECK_IN_OPENS_BEFORE).iso8601
         }
       end.sort_by { |meeting| meeting[:starts_at] }
