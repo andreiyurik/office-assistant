@@ -13,16 +13,14 @@ servers:
   #     - 192.168.0.1
   #   cmd: bin/jobs
 
-# Enable SSL auto certification via Let's Encrypt and allow for multiple apps on a single web server.
-# If used with Cloudflare, set encryption mode in SSL/TLS setting to "Full" to enable CF-to-app encryption.
-#
-# Using an SSL proxy like this requires turning on config.assume_ssl and config.force_ssl in production.rb!
-#
-# Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
-#
-# proxy:
-#   ssl: true
-#   host: app.example.com
+# TLS is terminated here, by the Kamal proxy, with a Let's Encrypt certificate.
+# The other half of this decision is config.assume_ssl and config.force_ssl in
+# config/environments/production.rb: the two have to stay switched on together,
+# otherwise cookies travel without the secure flag.
+# Put your own domain in `host` — the certificate is issued for it.
+proxy:
+  ssl: true
+  host: office.example.com
 
 # Where you keep your container images.
 registry:

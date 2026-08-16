@@ -122,7 +122,13 @@ Kamal, один контейнер на любом VPS. Перед первым 
 
 - `servers.web` — адрес сервера;
 - `registry` — реестр образов и доступ к нему;
-- `proxy.host` — домен, если нужен HTTPS от Let's Encrypt.
+- `proxy.host` — домен, на который выпускается сертификат Let's Encrypt.
+
+HTTPS настраивается в двух файлах сразу, и они должны быть согласованы:
+`proxy.ssl` в `config/deploy.yml` терминирует TLS, а `config.assume_ssl` и
+`config.force_ssl` в `config/environments/production.rb` заставляют приложение
+доверять прокси и отдавать cookie с флагом `secure`. Если разворачиваете без
+домена, выключать нужно обе половины.
 
 ```bash
 bin/kamal setup     # первый деплой
