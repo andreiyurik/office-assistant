@@ -2,7 +2,6 @@
   import { router } from '@inertiajs/svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
-  import type { CurrentUser } from '@/types'
 
   type TakenBy = {
     name: string
@@ -31,7 +30,6 @@
   }
 
   let {
-    current_user,
     selected_date,
     days,
     zones,
@@ -39,7 +37,6 @@
     default_desk,
     errors = {},
   }: {
-    current_user: CurrentUser
     selected_date: string
     days: string[]
     zones: Zone[]
@@ -109,7 +106,7 @@
   <title>Карта мест — Office Assistant</title>
 </svelte:head>
 
-<AppLayout {current_user}>
+<AppLayout>
   <h1 class="text-xl font-semibold tracking-tight">Карта мест</h1>
 
   <div class="mt-4">

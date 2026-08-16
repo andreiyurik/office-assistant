@@ -3,7 +3,6 @@
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import { Badge } from '@/lib/components/ui/badge'
-  import type { CurrentUser } from '@/types'
 
   type Person = {
     id: number
@@ -18,7 +17,6 @@
   type Team = { id: number; name: string }
 
   let {
-    current_user,
     selected_date,
     my_desk,
     days,
@@ -27,7 +25,6 @@
     people,
     teammates_count,
   }: {
-    current_user: CurrentUser
     selected_date: string
     my_desk: { name: string; zone_name: string } | null
     days: string[]
@@ -73,7 +70,7 @@
   <title>Кто в офисе — Office Assistant</title>
 </svelte:head>
 
-<AppLayout {current_user}>
+<AppLayout>
   <h1 class="text-xl font-semibold tracking-tight">Кто в офисе</h1>
 
   <div class="mt-4">

@@ -2,7 +2,6 @@
   import { router } from '@inertiajs/svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
-  import type { CurrentUser } from '@/types'
 
   type Cell = {
     state: 'free' | 'taken' | 'mine'
@@ -31,7 +30,6 @@
   }
 
   let {
-    current_user,
     selected_date,
     days,
     slots,
@@ -39,7 +37,6 @@
     my_meetings,
     errors = {},
   }: {
-    current_user: CurrentUser
     selected_date: string
     days: string[]
     slots: string[]
@@ -137,7 +134,7 @@
   <title>Переговорные — Office Assistant</title>
 </svelte:head>
 
-<AppLayout {current_user}>
+<AppLayout>
   <h1 class="text-xl font-semibold tracking-tight">Переговорные</h1>
 
   <div class="mt-4">
