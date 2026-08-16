@@ -19,7 +19,6 @@
   // to check in or cancel.
   type Meeting = CalendarMeeting & {
     room_name: string
-    can_check_in: boolean
     check_in_opens_at: string
   }
 
@@ -107,6 +106,9 @@
         </span>
         <span class="flex items-center gap-2">
           <span class="size-3.5 rounded bg-primary"></span> ваша бронь
+        </span>
+        <span class="flex items-center gap-2">
+          <span class="size-3.5 rounded bg-[oklch(0.72_0.16_70)]"></span> пора отметиться
         </span>
         <span class="flex items-center gap-2">
           <span class="size-3.5 rounded bg-muted"></span> занято или время прошло

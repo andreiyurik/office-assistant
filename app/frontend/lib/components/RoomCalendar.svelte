@@ -14,6 +14,7 @@
     mine: boolean
     person: string | null
     checked_in: boolean
+    can_check_in: boolean
   }
 
   export type ReleasedSlot = {
@@ -78,6 +79,20 @@
     return !overlapsMeeting(roomId, start, end)
   }
 
+  // My meeting has three looks: booked, waiting for my check-in (the window is
+  // open and the clock is running), and checked in.
+  function myClasses(meeting: CalendarMeeting): string {
+    if (meeting.checked_in) return 'mine checked-in'
+    if (meeting.can_check_in) return 'mine needs-check-in'
+    return 'mine'
+  }
+
+  function myTitle(meeting: CalendarMeeting): string {
+    if (meeting.checked_in) return '✓ вы'
+    if (meeting.can_check_in) return 'вы — отметьтесь'
+    return 'вы'
+  }
+
   // Everyone's meetings, plus two kinds of background hints: slots that were
   // released automatically, and time that has already passed today.
   const events = $derived.by((): Calendar.EventInput[] => {
@@ -86,8 +101,9 @@
       resourceId: meeting.room_id,
       start: meeting.starts_at,
       end: meeting.ends_at,
-      title: meeting.mine ? (meeting.checked_in ? '✓ вы' : 'вы') : (meeting.person ?? ''),
-      classNames: meeting.mine ? (meeting.checked_in ? 'mine checked-in' : 'mine') : 'taken',
+      title: meeting.mine ? myTitle(meeting) : (meeting.person ?? ''),
+      classNames: meeting.mine ? myClasses(meeting) : 'taken',
+      extendedProps: { person: meeting.person },
     }))
 
     for (const slot of releasedSlots) {
@@ -147,6 +163,11 @@
       nowIndicator: true,
       pointer: true,
       selectable: true,
+      // Names get cut in a narrow column; the full one is in the tooltip.
+      eventDidMount: (info) => {
+        const person = info.event.extendedProps.person
+        if (typeof person === 'string' && person) info.el.title = `${person}, ${info.timeText}`
+      },
       // The constraint is checked while a selection grows; the first slot of a
       // selection is not checked, so the callbacks check again before booking.
       selectConstraint: (info) => canBook(Number(info.resource.id), info.start, info.end),
@@ -222,6 +243,13 @@
 
   .room-calendar :global(.ec-event.checked-in) {
     --ec-event-bg-color: var(--primary);
+  }
+
+  /* Check-in window is open and nobody has confirmed: amber, so the eye
+     lands on it before the release job does. */
+  .room-calendar :global(.ec-event.needs-check-in) {
+    --ec-event-bg-color: oklch(0.72 0.16 70);
+    --ec-event-text-color: oklch(0.2 0.03 70);
   }
 
   .room-calendar :global(.ec-event.taken) {
