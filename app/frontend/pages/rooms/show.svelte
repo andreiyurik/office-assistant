@@ -56,10 +56,12 @@
 
   // The slot happening right now, so the eye lands on it first. Negative on any
   // day other than today.
-  const nowIndex = slots.findIndex((slot) => {
-    const start = new Date(slot).getTime()
-    return Date.now() >= start && Date.now() < start + 30 * 60 * 1000
-  })
+  const nowIndex = $derived(
+    slots.findIndex((slot) => {
+      const start = new Date(slot).getTime()
+      return Date.now() >= start && Date.now() < start + 30 * 60 * 1000
+    }),
+  )
 
   function time(iso: string): string {
     return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })

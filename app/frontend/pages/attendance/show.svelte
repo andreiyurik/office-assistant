@@ -34,7 +34,7 @@
     teammates_count: number
   } = $props()
 
-  const today = days[0]
+  const today = $derived(days[0])
 
   function asDate(iso: string): Date {
     return new Date(`${iso}T00:00:00`)
