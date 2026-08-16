@@ -297,9 +297,17 @@ puts "People: #{User.count}, all with password 'password'"
 puts "Bookings: #{Booking.count} (#{Booking.active.desks.on_date(Date.current).count} desks taken today)"
 puts "Recurring schedules: #{RecurringSchedule.count}"
 puts
-puts "Demo account: #{demo_user.email_address} (#{demo_user.name}, #{demo_user.team.name})"
-puts "  favourite desk #{demo_user.default_desk.name} is free, #{teammates_present} teammates are in today"
-puts "Rooms today, for the auto-release story:"
-puts "  #{rooms[0].name} #{abandoned_slot.strftime('%H:%M')} — booked, no check-in: `bin/rails office:release` frees it"
-puts "  #{rooms[1].name} #{checked_in_slot.strftime('%H:%M')} — checked in: the same job leaves it alone"
-puts "  #{rooms[2].name} #{released_slot.strftime('%H:%M')} — already released, shown as 'освободилось'"
+puts "Accounts for the demo (password for everyone: password):"
+account = ->(user, note) { puts "  #{user.email_address.ljust(30)} #{user.name}, #{user.team.name} — #{note}" }
+account.call(users[0], "main account: favourite desk #{demo_user.default_desk.name} is free, #{teammates_present} teammates in today")
+account.call(users[1], "checked in to #{rooms[1].name} at #{checked_in_slot.strftime('%H:%M')}, the release job leaves it alone")
+account.call(users[2], "her #{rooms[2].name} #{released_slot.strftime('%H:%M')} booking was released, shown as 'освободилось'")
+account.call(users[3], "another team and zone, recurring schedule Tue/Thu")
+puts "Teammates of #{users[0].name} in the office today (for 'sit next to'):"
+Booking.active.on_date(Date.current).where(user: teammates, resource_id: desk_ids).includes(:user, :resource).each do |booking|
+  account.call(booking.user, "desk #{booking.resource.name}")
+end
+puts "The auto-release story, all in #{Date.current.strftime('%d.%m')}:"
+puts "  #{rooms[0].name} #{abandoned_slot.strftime('%H:%M')} — #{users[0].name}, booked, no check-in: `bin/rails office:release` frees it"
+puts "  #{rooms[1].name} #{checked_in_slot.strftime('%H:%M')} — #{users[1].name}, checked in: the same job leaves it alone"
+puts "  #{rooms[2].name} #{released_slot.strftime('%H:%M')} — #{users[2].name}, already released, shown as 'освободилось'"
