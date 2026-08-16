@@ -42,19 +42,36 @@ class Booking < ApplicationRecord
     Array.new(count) { |index| first + (index * SLOT) }
   end
 
-  # Releases room bookings whose slot started more than RELEASE_AFTER ago and
-  # that nobody checked in to. A booking belongs to a group — a meeting longer
-  # than one slot is several rows — and one check-in covers the whole group,
-  # so an hour-long meeting is not cut in half while people sit in the room.
+  # Releases meetings nobody came to: the meeting started more than
+  # RELEASE_AFTER ago and no slot of it was ever checked in. It goes whole,
+  # including the slots still ahead — an empty room has to be free for the rest
+  # of the meeting too, which is the entire point of the mechanic. One check-in
+  # anywhere in the group saves all of it, so an hour-long meeting is never cut
+  # in half while people sit in the room.
   def self.release_abandoned!(now: Time.current)
     checked_in_groups = where(state: "checked_in").select(:group_id)
 
-    abandoned = active.rooms
+    abandoned_groups = rooms
       .where(state: "booked")
       .where(starts_at: ..(now - RELEASE_AFTER))
       .where.not(group_id: checked_in_groups)
+      .distinct.pluck(:group_id)
+
+    abandoned = rooms.where(state: "booked", group_id: abandoned_groups)
 
     where(id: abandoned.pluck(:id)).update_all(state: "released", updated_at: now)
+  end
+
+  # The room booking this person can confirm right now, if there is one. The
+  # two conditions are check_in_open? written for the database, so the query
+  # and the predicate live next to each other and move together.
+  def self.pending_check_in_for(user, now: Time.current)
+    rooms.where(user: user, state: "booked")
+      .where(starts_at: ..(now + CHECK_IN_OPENS_BEFORE))
+      .where(ends_at: now..)
+      .includes(:resource)
+      .order(:starts_at)
+      .first
   end
 
   # A meeting is one row per slot, tied together by a group id: booking an hour
@@ -74,19 +91,36 @@ class Booking < ApplicationRecord
     end
   end
 
-  def check_in_open?(now = Time.current)
-    now >= starts_at - CHECK_IN_OPENS_BEFORE && now < ends_at
+  # Every slot of the meeting this booking belongs to.
+  def meeting
+    self.class.where(group_id: group_id)
   end
 
-  # One check-in covers the whole meeting.
+  # A slot can be confirmed from ten minutes before it starts until it ends.
+  # Same rule as pending_check_in_for, in Ruby.
+  def check_in_open?(now = Time.current)
+    now >= starts_at - CHECK_IN_OPENS_BEFORE && now <= ends_at
+  end
+
+  # One check-in covers the whole meeting, so the window is open while any slot
+  # of it is open: on an hour-long meeting a person confirms once, not twice.
+  # Returns false when the window is closed and nothing was confirmed.
   def check_in!(now: Time.current)
-    self.class.where(group_id: group_id, state: "booked")
+    return false unless meeting.active.any? { |slot| slot.check_in_open?(now) }
+
+    meeting.where(state: "booked")
       .update_all(state: "checked_in", checked_in_at: now, updated_at: now)
+    true
   end
 
   def cancel_meeting!(now: Time.current)
-    self.class.active.where(group_id: group_id)
-      .update_all(state: "cancelled", updated_at: now)
+    meeting.active.update_all(state: "cancelled", updated_at: now)
+  end
+
+  # Cancelling a desk booking. A meeting is cancelled by cancel_meeting!,
+  # which takes the whole group at once.
+  def cancel!
+    update!(state: "cancelled")
   end
 
   def active?

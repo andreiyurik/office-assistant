@@ -30,6 +30,16 @@ class BookingTest < ActiveSupport::TestCase
     assert_equal "released", booking.reload.state
   end
 
+  test "auto-release frees the whole meeting, not only the slot that has passed" do
+    meeting = Booking.book_meeting!(user: users(:one), room: @room, starts_at: @slot, slots: 3)
+
+    Booking.release_abandoned!(now: @slot + Booking::RELEASE_AFTER + 1.minute)
+
+    # The room is empty for the rest of the meeting too, so the rest of it must
+    # not stay booked until each slot ages out on its own.
+    assert_equal %w[released released released], meeting.map { |booking| booking.reload.state }
+  end
+
   test "auto-release leaves a meeting alone once anybody checked in" do
     group_id = SecureRandom.uuid
     first_half = Booking.create!(
