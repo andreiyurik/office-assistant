@@ -114,7 +114,7 @@
         : 'bg-primary/80 text-primary-foreground'
     }
     if (cell.state === 'taken') return 'bg-muted text-muted-foreground'
-    if (cell.past) return 'bg-muted/50 text-muted-foreground/60'
+    if (cell.past) return 'slot-past text-muted-foreground/60'
     if (isPreviewed(room, index)) return 'bg-primary/20'
     if (canBook(room, index)) return 'bg-background hover:bg-primary/10 cursor-pointer'
     return 'bg-background text-muted-foreground/60'
@@ -162,7 +162,11 @@
         </thead>
         <tbody>
           {#each slots as slot, index (slot)}
-            <tr class="border-b last:border-b-0">
+            <tr
+              class="border-b last:border-b-0 {index === nowIndex
+                ? 'border-t-2 border-t-primary'
+                : ''}"
+            >
               <td
                 class="px-2 py-0 text-xs tabular-nums {index === nowIndex
                   ? 'font-semibold text-foreground'
@@ -221,7 +225,12 @@
             </button>
           {/each}
         </div>
-        <p class="mt-2 text-xs text-muted-foreground">Нажмите на свободный слот в сетке.</p>
+        <p class="mt-2 text-xs text-muted-foreground">
+          Нажмите на свободный слот в сетке.
+          {#if nowIndex >= 0}
+            Сегодня доступно время с {time(slots[nowIndex])}: более раннее уже прошло.
+          {/if}
+        </p>
       </section>
 
       <section class="rounded-lg border p-3">
