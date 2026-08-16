@@ -12,10 +12,12 @@ class DeskMapController < ApplicationController
       zones: zones_props(bookings),
       my_booking: my_booking && {
         id: my_booking.id,
+        desk_id: my_booking.resource_id,
         desk_name: my_booking.resource.name,
         zone_name: my_booking.resource.zone.name
       },
-      default_desk: default_desk_props(bookings)
+      default_desk: default_desk_props(bookings),
+      recurring: recurring_props
     }
   end
 
@@ -63,6 +65,17 @@ class DeskMapController < ApplicationController
           is_me: booking.user_id == Current.user.id,
           is_teammate: booking.user.team_id == Current.user.team_id
         }
+      }
+    end
+
+    def recurring_props
+      schedule = Current.user.recurring_schedule
+      return nil if schedule.nil?
+
+      {
+        weekdays: schedule.weekdays,
+        desk_id: schedule.resource_id,
+        desk_name: schedule.resource.name
       }
     end
 

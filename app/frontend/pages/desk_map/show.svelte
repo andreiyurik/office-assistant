@@ -35,15 +35,45 @@
     zones,
     my_booking,
     default_desk,
+    recurring,
     errors = {},
   }: {
     selected_date: string
     days: string[]
     zones: Zone[]
-    my_booking: { id: number; desk_name: string; zone_name: string } | null
+    my_booking: { id: number; desk_id: number; desk_name: string; zone_name: string } | null
     default_desk: { id: number; name: string; zone_name: string; free: boolean } | null
+    recurring: { weekdays: number[]; desk_id: number; desk_name: string } | null
     errors?: Record<string, string[] | string>
   } = $props()
+
+  const weekdayOptions = [
+    { value: 1, label: 'Пн' },
+    { value: 2, label: 'Вт' },
+    { value: 3, label: 'Ср' },
+    { value: 4, label: 'Чт' },
+    { value: 5, label: 'Пт' },
+  ]
+
+  // The days are shown as chosen only when the schedule is about the desk on
+  // screen — otherwise the person would see ticks next to another desk.
+  const scheduleDays = $derived(
+    recurring && my_booking && recurring.desk_id === my_booking.desk_id ? recurring.weekdays : [],
+  )
+
+  function toggleWeekday(day: number): void {
+    if (!my_booking) return
+
+    const next = scheduleDays.includes(day)
+      ? scheduleDays.filter((chosen) => chosen !== day)
+      : [...scheduleDays, day].sort()
+
+    router.patch(
+      '/recurring_schedule',
+      { resource_id: my_booking.desk_id, weekdays: next, date: selected_date },
+      { preserveScroll: true },
+    )
+  }
 
   const myZone = $derived(zones.find((zone) => zone.is_mine))
   const roomiest = $derived(
@@ -144,6 +174,35 @@
       {/if}
     {/if}
   </div>
+
+  {#if my_booking}
+    <div class="mt-2 flex flex-wrap items-center gap-2 rounded-lg border px-4 py-2.5 text-sm">
+      <span class="text-muted-foreground">Бронировать это место каждую</span>
+      {#each weekdayOptions as option (option.value)}
+        <button
+          type="button"
+          onclick={() => toggleWeekday(option.value)}
+          class="rounded-full border px-2.5 py-1 text-xs transition-colors {scheduleDays.includes(
+            option.value,
+          )
+            ? 'border-foreground bg-foreground text-background'
+            : 'hover:bg-muted'}"
+        >
+          {option.label}
+        </button>
+      {/each}
+
+      <span class="ml-auto text-xs text-muted-foreground">
+        {#if recurring && recurring.desk_id !== my_booking.desk_id}
+          Сейчас постоянное место — {recurring.desk_name}
+        {:else if scheduleDays.length > 0}
+          Брони создаются на две недели вперёд
+        {:else}
+          Выберите дни, и место забронируется само
+        {/if}
+      </span>
+    </div>
+  {/if}
 
   {#if bookingError()}
     <p class="mt-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">

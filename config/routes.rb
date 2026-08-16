@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   get "desks", to: "desk_map#show"
   get "rooms", to: "rooms#show"
 
+  resource :recurring_schedule, only: %i[ update ]
   resources :desk_bookings, only: %i[ create destroy ]
   resources :room_bookings, only: %i[ create destroy ] do
     post :check_in, on: :member

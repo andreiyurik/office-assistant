@@ -31,7 +31,31 @@ class RecurringSchedule < ApplicationRecord
     end
   end
 
+  # Called when the person edits the schedule: days they dropped should stop
+  # holding a desk, and the days they kept are booked ahead.
+  def apply!(from: Date.current)
+    future_bookings(from)
+      .reject { |booking| weekdays.include?(booking.starts_at.to_date.wday) }
+      .each { |booking| booking.update!(state: "cancelled") }
+
+    expand!(from: from)
+  end
+
+  # Called when the person turns the schedule off entirely.
+  def cancel_future_bookings!(from: Date.current)
+    future_bookings(from).each { |booking| booking.update!(state: "cancelled") }
+  end
+
   private
+    # Everything this person holds at this desk from tomorrow on. Today is left
+    # alone: they are already in the office.
+    def future_bookings(from)
+      user.bookings.active
+        .where(resource_id: resource_id)
+        .where(starts_at: (from + 1.day).beginning_of_day..)
+        .to_a
+    end
+
     def weekdays_are_workdays
       if weekdays.blank?
         errors.add(:base, "Выберите хотя бы один день недели.")
