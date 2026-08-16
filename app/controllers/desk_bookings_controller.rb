@@ -1,6 +1,6 @@
 class DeskBookingsController < ApplicationController
   def create
-    date = booking_date
+    date = selected_date
     desk = Resource.desks.find(params[:resource_id])
     booking = Current.user.bookings.new(resource: desk, starts_at: date.beginning_of_day)
 
@@ -33,12 +33,6 @@ class DeskBookingsController < ApplicationController
   end
 
   private
-    def booking_date
-      Date.iso8601(params[:date])
-    rescue ArgumentError, TypeError
-      Date.current
-    end
-
     def desk_booking_on(date)
       Current.user.bookings.active.on_date(date)
         .where(resource_id: Resource.where(kind: "desk").select(:id))

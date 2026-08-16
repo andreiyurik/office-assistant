@@ -1,6 +1,10 @@
 class ApplicationController < ActionController::Base
   include Authentication
 
+  # Every screen works on one chosen day and offers the same short strip of
+  # days to switch to, so both live here instead of in each controller.
+  DAYS_SHOWN = 5
+
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
@@ -16,6 +20,18 @@ class ApplicationController < ActionController::Base
     # every non-GET request, which is what Rails checks.
     def set_csrf_cookie
       cookies["XSRF-TOKEN"] = { value: form_authenticity_token, same_site: :lax }
+    end
+
+    # A day that came from a link or a form. Anything unreadable means today:
+    # the screens open on today and a broken date is not worth an error page.
+    def selected_date
+      Date.iso8601(params[:date])
+    rescue ArgumentError, TypeError
+      Date.current
+    end
+
+    def days_shown
+      (0...DAYS_SHOWN).map { |offset| (Date.current + offset).to_s }
     end
 
     def current_user_props

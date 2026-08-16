@@ -1,6 +1,4 @@
 class AttendanceController < ApplicationController
-  DAYS_SHOWN = 5
-
   def show
     date = selected_date
     people = people_in_office(date)
@@ -12,7 +10,7 @@ class AttendanceController < ApplicationController
         name: my_booking.resource.name,
         zone_name: my_booking.resource.zone.name
       },
-      days: (0...DAYS_SHOWN).map { |offset| (Date.current + offset).to_s },
+      days: days_shown,
       teams: Team.order(:name).map { |team| { id: team.id, name: team.name } },
       selected_team_id: selected_team&.id,
       people: people,
@@ -21,12 +19,6 @@ class AttendanceController < ApplicationController
   end
 
   private
-    def selected_date
-      Date.iso8601(params[:date])
-    rescue ArgumentError, TypeError
-      Date.current
-    end
-
     def selected_team
       @selected_team ||= Team.find_by(id: params[:team_id])
     end

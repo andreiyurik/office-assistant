@@ -1,13 +1,11 @@
 class RoomsController < ApplicationController
-  DAYS_SHOWN = 5
-
   def show
     date = selected_date
     day_bookings = room_bookings(date)
 
     render inertia: "rooms/show", props: {
       selected_date: date.to_s,
-      days: (0...DAYS_SHOWN).map { |offset| (Date.current + offset).to_s },
+      days: days_shown,
       hours: { open: Booking::OPEN_HOUR, close: Booking::CLOSE_HOUR },
       slot_minutes: Booking::SLOT_MINUTES,
       max_slots: Booking::MAX_MEETING_SLOTS,
@@ -18,12 +16,6 @@ class RoomsController < ApplicationController
   end
 
   private
-    def selected_date
-      Date.iso8601(params[:date])
-    rescue ArgumentError, TypeError
-      Date.current
-    end
-
     def room_bookings(date)
       Booking.on_date(date)
         .where(resource_id: Resource.where(kind: "room").select(:id))

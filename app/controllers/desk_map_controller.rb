@@ -1,6 +1,4 @@
 class DeskMapController < ApplicationController
-  DAYS_SHOWN = 5
-
   def show
     date = selected_date
     bookings = desk_bookings(date)
@@ -9,7 +7,7 @@ class DeskMapController < ApplicationController
 
     render inertia: "desk_map/show", props: {
       selected_date: date.to_s,
-      days: (0...DAYS_SHOWN).map { |offset| (Date.current + offset).to_s },
+      days: days_shown,
       near: near,
       zones: zones_props(bookings, near && near[:desk_id]),
       my_booking: my_booking && {
@@ -24,12 +22,6 @@ class DeskMapController < ApplicationController
   end
 
   private
-    def selected_date
-      Date.iso8601(params[:date])
-    rescue ArgumentError, TypeError
-      Date.current
-    end
-
     # Active desk bookings of the day, keyed by desk.
     def desk_bookings(date)
       Booking.active.on_date(date)
