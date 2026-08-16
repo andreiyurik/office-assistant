@@ -26,9 +26,9 @@ test:
   <<: *default
   database: office_assistant_test
 
-# Rails 8 keeps cache, queue and cable in separate databases so their write
-# traffic never competes with the app data. All four live in one Postgres
-# server; `db:prepare` creates them.
+# Rails 8 keeps cache and queue in separate databases so their write traffic
+# never competes with the app data. All three live in one Postgres server;
+# `db:prepare` creates them.
 production:
   primary: &primary_production
     <<: *default
@@ -41,7 +41,3 @@ production:
     <<: *primary_production
     database: office_assistant_production_queue
     migrations_paths: db/queue_migrate
-  cable:
-    <<: *primary_production
-    database: office_assistant_production_cable
-    migrations_paths: db/cable_migrate

@@ -1,6 +1,15 @@
 require_relative "boot"
 
-require "rails/all"
+require "rails"
+# Only the parts this application uses. No mail, no file uploads, no
+# websockets: leaving them out of the boot is one less thing to explain and one
+# less database (Action Cable had its own).
+require "active_model/railtie"
+require "active_job/railtie"
+require "active_record/railtie"
+require "action_controller/railtie"
+require "action_view/railtie"
+require "rails/test_unit/railtie"
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
