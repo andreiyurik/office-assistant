@@ -38,7 +38,11 @@ class RoomBookingsController < ApplicationController
   end
 
   private
+    # Anything unreadable falls back to now, which the model then rejects with
+    # a message about the half-hour grid.
     def slot_start
       Time.zone.parse(params[:starts_at].to_s) || Time.current
+    rescue ArgumentError
+      Time.current
     end
 end
