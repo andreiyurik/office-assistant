@@ -2,10 +2,31 @@
 # 60 people, and bookings for today and the next four days.
 #
 # These are demo seeds, not reference data, so the file rebuilds everything on
-# every run. The random number generator has a fixed seed, so the same office
-# comes out every time.
+# every run (`bin/rails db:seed`, a few seconds). The random number generator
+# has a fixed seed, so the same office comes out every time; only the bookings
+# that depend on the clock move.
+#
+# What comes out and where to look for it:
+#
+#   1. Office layout      — zones, teams, a 4x10 desk grid, six rooms
+#   2. People             — 60 accounts, password "password" for everyone
+#   3. Recurring schedules — 8 regulars who hold their desk on fixed weekdays
+#   4. Desk bookings      — today and four days ahead, teams seated together
+#   5. Room bookings      — three meetings per room per day, past ones attended
+#   6. The demo account   — anna.ivanova@office.ru, prepared for a live booking
+#   7. Three room bookings that make auto-release visible on screen
+#
+# Re-run the seeds shortly before a demo: section 7 places bookings relative to
+# the current time. The summary printed at the end says what to show and where.
 
 rng = Random.new(20260815)
+
+# Knobs. Everything else in the file follows from these.
+days_ahead = 5                              # today plus four days, matches DayStrip
+attendance_per_day = [ 22, 21, 19, 17, 14 ] # desks taken on each of those days, out of 40
+keep_free_per_zone = 2                      # so there is always a desk to book live in every zone
+regulars = 8                                # people with a recurring weekday schedule
+meetings_per_room_per_day = 3
 
 Session.delete_all
 Booking.delete_all
@@ -15,7 +36,7 @@ Resource.delete_all
 Team.delete_all
 Zone.delete_all
 
-# --- Office layout ------------------------------------------------------------
+# --- 1. Office layout ---------------------------------------------------------
 
 north = Zone.create!(name: "Север", floor: 3)
 south = Zone.create!(name: "Юг", floor: 3)
@@ -66,7 +87,9 @@ end
 desks = Resource.desks.to_a
 rooms = Resource.rooms.to_a
 
-# --- People -------------------------------------------------------------------
+# --- 2. People ----------------------------------------------------------------
+# Ten first names x six surnames. Emails are latin: anna.ivanova@office.ru,
+# dmitry.petrov@office.ru and so on; women get an "a" at the end of the surname.
 
 first_names = [
   [ "Анна", "anna", :f ],
@@ -121,11 +144,11 @@ users.each_with_index do |user, index|
   user.update!(default_desk: desk)
 end
 
-# --- Recurring schedules ------------------------------------------------------
+# --- 3. Recurring schedules ---------------------------------------------------
 # Expanded first, so a regular visitor keeps their desk and the random bookings
-# below fill in around them.
+# below fill in around them. Half come Mon/Wed/Fri, half Tue/Thu.
 
-users.select(&:default_desk).first(8).each_with_index do |user, index|
+users.select(&:default_desk).first(regulars).each_with_index do |user, index|
   schedule = RecurringSchedule.create!(
     user: user,
     resource: user.default_desk,
@@ -136,14 +159,11 @@ users.select(&:default_desk).first(8).each_with_index do |user, index|
   schedule.expand!
 end
 
-# --- Desk bookings for today and the next four days ---------------------------
+# --- 4. Desk bookings for today and the days ahead ----------------------------
+# Attendance falls off towards the end of the week on purpose: the "who is in
+# the office" screen should look different from day to day.
 
-days = (0..4).map { |offset| Date.current + offset }
-attendance_per_day = [ 22, 21, 19, 17, 14 ]
-
-# Every zone keeps this many desks free, so there is always something to book
-# on the map during a demo.
-keep_free_per_zone = 2
+days = (0...days_ahead).map { |offset| Date.current + offset }
 
 days.each_with_index do |date, index|
   taken_desk_ids = Booking.active.on_date(date).pluck(:resource_id)
@@ -169,13 +189,16 @@ days.each_with_index do |date, index|
   end
 end
 
-# --- Room bookings ------------------------------------------------------------
+# --- 5. Room bookings ---------------------------------------------------------
+# Random half-hour and hour-long meetings. A meeting that collides with one
+# already placed is simply skipped, so a room may end up with fewer than
+# `meetings_per_room_per_day`.
 
 days.each do |date|
   slot_starts = Booking.slot_starts_for(date)
 
   rooms.each do |room|
-    3.times do
+    meetings_per_room_per_day.times do
       first_slot = rng.rand(slot_starts.size - 1)
       length = rng.rand(1..2)
       starts = slot_starts[first_slot, length]
@@ -205,10 +228,11 @@ days.each do |date|
   end
 end
 
-# --- The account the demo is shown from ---------------------------------------
-# The first person opens the app to a useful picture: teammates already in the
-# office, her favourite desk still free, and no desk of her own yet — so booking
-# one is something that can be done live on screen.
+# --- 6. The account the demo is shown from ------------------------------------
+# The first person (Anna Ivanova, team "Платформа", zone "Север") opens the app
+# to a useful picture: at least four teammates already in the office, her
+# favourite desk still free, and no desk of her own yet — so booking one is
+# something that can be done live on screen.
 
 demo_user = users.first
 desk_ids = desks.map(&:id)
@@ -232,9 +256,10 @@ teammates.reject { |user| present_ids.include?(user.id) }.first(wanted).each do 
   Booking.create!(user: teammate, resource: desk, starts_at: Date.current.beginning_of_day)
 end
 
-# --- Three bookings that make the demo visible --------------------------------
-# Re-run the seeds shortly before a demo: the abandoned booking is placed
-# relative to the current time.
+# --- 7. Three room bookings that make auto-release visible --------------------
+# All three sit in slots that have already started today, so nothing has to be
+# waited for. Before the office opens (or after it closes) they fall back to the
+# first slot of the day and the "abandoned" one is not yet due for release.
 
 today_slots = Booking.slot_starts_for(Date.current)
 started_slots = today_slots.select { |slot| slot <= Time.current - Booking::RELEASE_AFTER }
@@ -243,8 +268,8 @@ abandoned_slot = started_slots.last || today_slots.first
 released_slot = started_slots.first || today_slots.first
 checked_in_slot = started_slots[-2] || today_slots.first
 
-# Booked, the slot has already started, nobody checked in: the auto-release job
-# will free this one.
+# Booked, the slot started more than ten minutes ago, nobody checked in: this is
+# the one `bin/rails office:release` frees during the demo.
 Booking.active.where(starts_at: abandoned_slot, resource: rooms).delete_all
 Booking.create!(user: users[0], resource: rooms[0], starts_at: abandoned_slot)
 
@@ -263,8 +288,18 @@ Booking.create!(
 Booking.active.where(starts_at: released_slot, resource: rooms).delete_all
 Booking.create!(user: users[2], resource: rooms[2], starts_at: released_slot, state: "released")
 
+# --- Summary: what to show ----------------------------------------------------
+
+teammates_present = Booking.active.on_date(Date.current).where(user: teammates, resource_id: desk_ids).count
+
 puts "Zones: #{Zone.count}, teams: #{Team.count}, desks: #{Resource.desks.count}, rooms: #{Resource.rooms.count}"
 puts "People: #{User.count}, all with password 'password'"
 puts "Bookings: #{Booking.count} (#{Booking.active.desks.on_date(Date.current).count} desks taken today)"
 puts "Recurring schedules: #{RecurringSchedule.count}"
-puts "Abandoned room booking waiting for the job: #{rooms[0].name} at #{abandoned_slot.strftime('%d.%m %H:%M')}"
+puts
+puts "Demo account: #{demo_user.email_address} (#{demo_user.name}, #{demo_user.team.name})"
+puts "  favourite desk #{demo_user.default_desk.name} is free, #{teammates_present} teammates are in today"
+puts "Rooms today, for the auto-release story:"
+puts "  #{rooms[0].name} #{abandoned_slot.strftime('%H:%M')} — booked, no check-in: `bin/rails office:release` frees it"
+puts "  #{rooms[1].name} #{checked_in_slot.strftime('%H:%M')} — checked in: the same job leaves it alone"
+puts "  #{rooms[2].name} #{released_slot.strftime('%H:%M')} — already released, shown as 'освободилось'"
