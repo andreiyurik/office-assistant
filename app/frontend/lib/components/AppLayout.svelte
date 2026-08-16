@@ -3,7 +3,6 @@
   import { Link, page, router } from '@inertiajs/svelte'
   import { initials, time } from '@/lib/format'
   import { Button, buttonVariants } from '@/lib/components/ui/button'
-  import BrandMark from '@/lib/components/BrandMark.svelte'
   import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon'
   import SquaresFourIcon from 'phosphor-svelte/lib/SquaresFourIcon'
   import CalendarBlankIcon from 'phosphor-svelte/lib/CalendarBlankIcon'
@@ -43,10 +42,15 @@
     <div class="mx-auto max-w-6xl px-4">
       <div class="flex h-14 items-center justify-between gap-3">
         <div class="flex min-w-0 items-center gap-6">
-          <Link href="/" class="flex shrink-0 items-center gap-2 rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-            <BrandMark />
-            <!-- On a phone the check-in button needs the room: the name yields to it. -->
-            <span class="text-sm font-semibold tracking-tight {pending ? 'hidden sm:inline' : ''}">Office Assistant</span>
+          <!-- A wordmark, no logo. On a phone the check-in button needs the room:
+               the name yields to it. -->
+          <Link
+            href="/"
+            class="shrink-0 rounded-md text-[15px] font-semibold tracking-tight focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none {pending
+              ? 'hidden sm:inline'
+              : ''}"
+          >
+            Office Assistant
           </Link>
 
           <!-- Desktop: pills next to the brand. Phone: the tab row below. -->

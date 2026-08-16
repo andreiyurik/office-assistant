@@ -2,7 +2,6 @@
   import { Form } from '@inertiajs/svelte'
   import { firstError } from '@/lib/format'
   import { Button } from '@/lib/components/ui/button'
-  import BrandMark from '@/lib/components/BrandMark.svelte'
   import UsersThreeIcon from 'phosphor-svelte/lib/UsersThreeIcon'
   import SquaresFourIcon from 'phosphor-svelte/lib/SquaresFourIcon'
   import CalendarBlankIcon from 'phosphor-svelte/lib/CalendarBlankIcon'
@@ -38,10 +37,7 @@
       class="pointer-events-none absolute -top-40 -right-40 size-[34rem] rounded-full bg-[radial-gradient(closest-side,oklch(0.55_0.19_262/0.55),transparent)]"
     ></div>
 
-    <div class="relative flex items-center gap-3">
-      <BrandMark class="size-9" />
-      <span class="text-lg font-semibold tracking-tight">Office Assistant</span>
-    </div>
+    <div class="relative text-lg font-semibold tracking-tight">Office Assistant</div>
 
     <div class="relative max-w-md">
       <h2 class="text-3xl leading-tight font-semibold tracking-tight text-balance">
@@ -68,10 +64,7 @@
   <!-- Form panel -->
   <main class="flex items-center justify-center bg-background px-4 py-10 sm:px-8">
     <div class="w-full max-w-sm">
-      <div class="mb-8 flex items-center gap-3 lg:hidden">
-        <BrandMark class="size-9" />
-        <span class="text-lg font-semibold tracking-tight">Office Assistant</span>
-      </div>
+      <div class="mb-8 text-lg font-semibold tracking-tight lg:hidden">Office Assistant</div>
 
       <h1 class="text-2xl font-semibold tracking-tight">Вход</h1>
       <p class="mt-1 text-sm text-muted-foreground">Рабочая почта и пароль — те же, что в офисе.</p>
