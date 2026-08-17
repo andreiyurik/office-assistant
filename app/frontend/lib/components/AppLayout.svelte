@@ -67,8 +67,8 @@
      large breakpoint the HeaderNav is the navigation, and letting Carbon expand
      the rail as well would put the same three links on screen twice. -->
 <Header
-  companyName="Office"
-  platformName="Assistant"
+  companyName="Macrohard"
+  platformName="Office Assistant"
   href="/"
   onclick={visitOnClick('/')}
   expandedByDefault={false}
@@ -146,6 +146,22 @@
 </Content>
 
 <style>
+  /* The lockup lives in a 48px bar next to a person's full name. It must not
+     wrap: "Macrohard Office Assistant" beside "Екатерина Кузнецова" broke onto
+     two lines inside the header. Below Carbon's medium breakpoint the company
+     prefix steps aside — on a phone the product name is what identifies the
+     screen, and the company is on the login page anyway.
+     Global because the header is Carbon's own markup, and there is one. */
+  :global(.bx--header__name) {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 41.99rem) {
+    :global(.bx--header__name--prefix) {
+      display: none;
+    }
+  }
+
   /* Carbon gives the notification a fixed min-width meant for a narrow column;
      across the top of a page it should use the width it has. */
   .check-in :global(.bx--inline-notification) {

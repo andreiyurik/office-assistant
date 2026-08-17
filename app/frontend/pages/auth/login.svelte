@@ -28,7 +28,7 @@
   <!-- Gray 100 under a light theme is what Carbon's inverse surface tokens are
        for, so the panel is a token pair rather than a colour picked by hand. -->
   <aside class="login__brand">
-    <div class="bx--type-productive-heading-03">Office <strong>Assistant</strong></div>
+    <div class="bx--type-productive-heading-03">Macrohard <strong>Office Assistant</strong></div>
 
     <div>
       <h2 class="bx--type-expressive-heading-04">
@@ -47,12 +47,15 @@
       </ul>
     </div>
 
-    <p class="bx--type-caption-01">Внутренний сервис. Вход по рабочей почте.</p>
+    <p class="bx--type-caption-01">
+      Внутренний сервис. Вход по рабочей почте.<br />
+      <span class="login__copy">© Macrohard</span>
+    </p>
   </aside>
 
   <main class="login__panel">
     <div class="login__form">
-      <div class="login__wordmark bx--type-productive-heading-03">Office <strong>Assistant</strong></div>
+      <div class="login__wordmark bx--type-productive-heading-03">Macrohard <strong>Office Assistant</strong></div>
 
       <h1 class="bx--type-productive-heading-04">Вход</h1>
       <p class="login__lede bx--type-body-long-01">Рабочая почта и пароль — те же, что в офисе.</p>
@@ -117,6 +120,13 @@
 
   .login__brand > p {
     color: var(--cds-text-03);
+    line-height: 1.5;
+  }
+
+  /* text-05 on this panel is 3.6:1 — a footnote is still text and owes 4.5.
+     The line break carries the hierarchy instead of the colour. */
+  .login__copy {
+    color: inherit;
   }
 
   .login__points {
