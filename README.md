@@ -16,8 +16,8 @@
 ## Стек
 
 - Ruby on Rails 8, `inertia_rails`, Vite
-- Svelte 5 (runes) + TypeScript, shadcn-svelte, Tailwind CSS
-- EventCalendar (`@event-calendar/core`) — сетка переговорных; иконки — Phosphor (`phosphor-svelte`)
+- Svelte 5 (runes) + TypeScript, `carbon-components-svelte` (тема g10), IBM Plex Sans
+- EventCalendar (`@event-calendar/core`) — сетка переговорных; иконки — `carbon-icons-svelte`
 - PostgreSQL 17 (локально — контейнер из `compose.yml`, в проде — accessory Kamal)
 - Solid Queue для фоновых задач, Solid Cache для кеша
 - Встроенная аутентификация Rails 8
@@ -115,7 +115,8 @@ UNIQUE (grid_row, grid_col)     WHERE kind = 'desk'
 бронь остаётся в истории, но слот не занимает.
 
 Почему решения приняты именно такие — в `DECISIONS.md`. Что входит в MVP и что
-сознательно не входит — в `SCOPE.md`.
+сознательно не входит — в `SCOPE.md`. Чем этот интерфейс отличается от версии на
+shadcn в `main` и сколько это стоит — в `SPIKE-carbon.md`.
 
 ## Деплой
 

@@ -2,8 +2,8 @@
    and line heights are tuned to its metrics, so without it the result only
    imitates Carbon. Each split file carries one unicode-range, so a Russian
    page fetches the Cyrillic and Latin1 cuts and leaves Greek and Pi alone.
-   Three weights: light for display, regular for body, semibold for headings. */
-@import "@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-Light.css";
+   Two weights: every Carbon type style these screens use is 400 or 600. The
+   300 cut belongs to the display sizes, which this product has no use for. */
 @import "@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-Regular.css";
 @import "@ibm/plex-sans/fonts/split/woff2/IBMPlexSans-SemiBold.css";
 
