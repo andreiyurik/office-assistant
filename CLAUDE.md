@@ -112,10 +112,10 @@ Do not write entries for obvious things. Ten to fifteen entries total is right.
 
 ## README.md
 
-Write only the structure and the technical sections (setup, run, deploy, schema
-overview). **Leave the "Проблема", "Почему не купили готовое", "Границы MVP" and
-"Что дальше" sections as empty headings** — the author writes those himself in
-his own words, because he has to defend them out loud.
+Keep it to what a reader needs: what the service is and who it is for, how to
+use it, how to run it, the schema. No empty headings waiting to be filled in —
+a section either says something or is not there. The reasoning behind a choice
+belongs in `DECISIONS.md`, not here.
 
 ## Working style
 
