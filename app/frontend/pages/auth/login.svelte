@@ -84,10 +84,7 @@
           required
         />
 
-        <!-- Full width with the arrow: a Carbon button reserves 64px on the
-             right for an icon, so a short label leaves a squat box with a hole
-             in it. This is the shape IBM's own sign-in uses. -->
-        <Button type="submit" size="lg" icon={ArrowRight}>Войти</Button>
+        <Button type="submit" icon={ArrowRight}>Войти</Button>
       </Form>
 
       <p class="login__foot bx--type-caption-01">
@@ -185,11 +182,23 @@
     gap: var(--cds-spacing-06);
   }
 
-  /* Direct child only: the password field's show/hide toggle is a .bx--btn too,
+  /* The submit spans the fields above it, and the label and the arrow sit
+     together in the middle. Carbon pins a button icon to the right edge and
+     pushes the label left, which reads well on a button sized to its text and
+     strands the two at opposite ends of a full-width bar.
+     Direct child only: the password field's show/hide toggle is a .bx--btn too,
      and stretching that one pushes the eye into the middle of the field. */
   .login__form :global(.bx--form > .bx--btn) {
     width: 100%;
     max-width: none;
+    justify-content: center;
+    gap: var(--cds-spacing-03);
+    padding-inline: var(--cds-spacing-05);
+  }
+
+  .login__form :global(.bx--form > .bx--btn .bx--btn__icon) {
+    position: static;
+    margin: 0;
   }
 
   .login__form :global(.bx--form-item) {
