@@ -36,6 +36,7 @@
     meetings,
     releasedSlots,
     onBook,
+    onMeetingClick,
   }: {
     date: string
     hours: { open: number; close: number }
@@ -45,6 +46,7 @@
     meetings: CalendarMeeting[]
     releasedSlots: ReleasedSlot[]
     onBook: (roomId: number, startsAt: string, slots: number) => void
+    onMeetingClick: (meetingId: number) => void
   } = $props()
 
   const plugins = [ResourceTimeGrid, Interaction]
@@ -103,7 +105,7 @@
       end: meeting.ends_at,
       title: meeting.mine ? myTitle(meeting) : (meeting.person ?? ''),
       classNames: meeting.mine ? myClasses(meeting) : 'taken',
-      extendedProps: { person: meeting.person },
+      extendedProps: { person: meeting.person, meetingId: meeting.id, mine: meeting.mine },
     }))
 
     for (const slot of releasedSlots) {
@@ -171,6 +173,12 @@
       // The constraint is checked while a selection grows; the first slot of a
       // selection is not checked, so the callbacks check again before booking.
       selectConstraint: (info) => canBook(Number(info.resource.id), info.start, info.end),
+      // Your own meeting is the one block on the grid that has actions behind
+      // it; everyone else's is just occupied time.
+      eventClick: (info) => {
+        const { mine, meetingId } = info.event.extendedProps
+        if (mine && typeof meetingId === 'number') onMeetingClick(meetingId)
+      },
       // A click is one slot, a drag is several — both end up in the same place.
       dateClick: (info) => {
         if (!info.resource) return
@@ -191,90 +199,128 @@
   )
 </script>
 
-<div class="room-calendar overflow-x-auto text-sm">
+<div class="room-calendar">
   <Calendar bind:this={calendar} {plugins} {options}>
     {#snippet resourceLabelContent({ resource })}
-      <span class="font-medium">{resource.title}</span>
-      <span class="ml-1 text-xs font-normal text-muted-foreground">
-        {resource.extendedProps.capacity} мест
-      </span>
+      <span class="room">{resource.title}</span>
+      <span class="room-capacity">{resource.extendedProps.capacity} мест</span>
     {/snippet}
     {#snippet eventContent({ event, timeText })}
       {#if event.display === 'background'}
-        <span class="text-[10px]">{event.title}</span>
+        <span class="event-note">{event.title}</span>
       {:else}
-        <span class="truncate text-xs">{event.title}</span>
-        <span class="text-[10px] opacity-80">{timeText}</span>
+        <span class="event-title">{event.title}</span>
+        <span class="event-time">{timeText}</span>
       {/if}
     {/snippet}
   </Calendar>
 </div>
 
 <style>
-  /* Map the calendar's own variables onto the app's design tokens so it
-     follows the theme, including dark mode. */
+  /* The calendar is the one part of the screen Carbon does not draw, so its own
+     variables are pointed at Carbon tokens. Nothing here is a colour: every
+     value is the token a Carbon component would use in the same place. */
   .room-calendar :global(.ec) {
-    color-scheme: inherit;
-    --ec-bg-color: var(--background);
-    --ec-text-color: var(--foreground);
-    --ec-border-color: var(--border);
+    --ec-bg-color: var(--cds-ui-01);
+    --ec-text-color: var(--cds-text-01);
+    --ec-border-color: var(--cds-ui-03);
     --ec-today-bg-color: transparent;
-    --ec-highlight-color: color-mix(in oklch, var(--primary) 18%, transparent);
-    --ec-now-indicator-color: var(--destructive);
-    /* Default event colour is what the selection preview is drawn with. */
-    --ec-event-bg-color: color-mix(in oklch, var(--primary) 45%, transparent);
-    --ec-event-text-color: var(--primary-foreground);
+    --ec-highlight-color: var(--cds-highlight);
+    --ec-now-indicator-color: var(--cds-support-01);
+    /* The default event colour is what the drag preview is drawn with. */
+    --ec-event-bg-color: var(--cds-interactive-01);
+    --ec-event-text-color: var(--cds-text-04);
     --ec-bg-event-opacity: 1;
-    border-radius: var(--radius);
-    overflow: hidden;
+    font-family: inherit;
   }
 
   /* Hour labels sit just below their line instead of centred on it, so the
      first one (09:00) fits under the header — the library hides it otherwise. */
   .room-calendar :global(.ec-body .ec-sidebar .ec-slot) {
-    inset-block-start: 0.2rem;
+    inset-block-start: var(--cds-spacing-02);
   }
   .room-calendar :global(.ec-body .ec-sidebar .ec-slot.ec-hidden) {
     visibility: visible;
   }
 
+  /* Carbon has no rounded corners anywhere, so neither does an event. */
   .room-calendar :global(.ec-event) {
-    border-radius: calc(var(--radius) - 4px);
-    padding: 2px 6px;
+    border-radius: 0;
+    padding: var(--cds-spacing-01) var(--cds-spacing-03);
     display: flex;
     flex-direction: column;
     gap: 1px;
   }
 
   .room-calendar :global(.ec-event.mine) {
-    --ec-event-bg-color: color-mix(in oklch, var(--primary) 80%, transparent);
+    --ec-event-bg-color: var(--cds-interactive-01);
   }
 
   .room-calendar :global(.ec-event.checked-in) {
-    --ec-event-bg-color: var(--primary);
+    --ec-event-bg-color: var(--cds-support-02);
   }
 
-  /* Check-in window is open and nobody has confirmed: amber, so the eye
-     lands on it before the release job does. */
+  /* The check-in window is open and nobody has confirmed. Carbon's warning
+     token, and its dark text — yellow carries no white text anywhere in Carbon. */
   .room-calendar :global(.ec-event.needs-check-in) {
-    --ec-event-bg-color: oklch(0.72 0.16 70);
-    --ec-event-text-color: oklch(0.2 0.03 70);
+    --ec-event-bg-color: var(--cds-support-03);
+    --ec-event-text-color: var(--cds-text-01);
   }
 
   .room-calendar :global(.ec-event.taken) {
-    --ec-event-bg-color: var(--muted);
-    --ec-event-text-color: var(--muted-foreground);
+    --ec-event-bg-color: var(--cds-ui-03);
+    --ec-event-text-color: var(--cds-text-02);
+  }
+
+  /* Your own meetings are the only clickable blocks. */
+  .room-calendar :global(.ec-event.mine) {
+    cursor: pointer;
   }
 
   .room-calendar :global(.ec-bg-event.released) {
     --ec-bg-event-color: transparent;
-    color: var(--muted-foreground);
-    padding: 2px 6px;
+    color: var(--cds-text-02);
+    padding: var(--cds-spacing-01) var(--cds-spacing-03);
     text-align: right;
   }
 
   .room-calendar :global(.ec-bg-event.past) {
-    --ec-bg-event-color: var(--muted);
-    opacity: 0.6;
+    --ec-bg-event-color: var(--cds-ui-02);
+  }
+
+  /* Room names read as column headers, so they get the table header surface. */
+  .room-calendar :global(.ec-header) {
+    background-color: var(--cds-ui-03);
+  }
+
+  /* Six rooms do not fit a phone; the grid scrolls sideways rather than
+     squeezing the columns past legibility. */
+  .room-calendar {
+    overflow-x: auto;
+  }
+
+  .room-calendar :global(.room) {
+    font-weight: 600;
+  }
+
+  .room-calendar :global(.room-capacity) {
+    margin-inline-start: var(--cds-spacing-02);
+    font-weight: 400;
+    color: var(--cds-text-02);
+  }
+
+  .room-calendar :global(.event-title) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .room-calendar :global(.event-time),
+  .room-calendar :global(.event-note) {
+    font-size: var(--cds-caption-01-font-size);
+  }
+
+  .room-calendar :global(.event-time) {
+    opacity: 0.85;
   }
 </style>

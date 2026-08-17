@@ -1,13 +1,12 @@
 <script lang="ts">
   import { router } from '@inertiajs/svelte'
+  import { Button, Modal, Tag, Tile } from 'carbon-components-svelte'
+  import CheckmarkFilled from 'carbon-icons-svelte/lib/CheckmarkFilled.svelte'
+  import Undo from 'carbon-icons-svelte/lib/Undo.svelte'
   import AppLayout from '@/lib/components/AppLayout.svelte'
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
-  import { Button } from 'carbon-components-svelte'
-  import CheckmarkFilled from 'carbon-icons-svelte/lib/CheckmarkFilled.svelte'
-  import Undo from 'carbon-icons-svelte/lib/Undo.svelte'
-  import Calendar from 'carbon-icons-svelte/lib/Calendar.svelte'
   import { firstError, time } from '@/lib/format'
   import RoomCalendar, {
     type CalendarRoom,
@@ -45,8 +44,14 @@
   } = $props()
 
   const myMeetings = $derived(meetings.filter((meeting) => meeting.mine))
-
   const error = $derived(firstError(errors))
+
+  // Clicking your own block on the grid opens what you can do with it. Kept in
+  // the tree so Carbon can put focus back on close; the meeting outlives the
+  // close transition so the dialog does not blank while fading out.
+  let openMeetingId = $state<number | null>(null)
+  let dialogOpen = $state(false)
+  const openMeeting = $derived(myMeetings.find((meeting) => meeting.id === openMeetingId) ?? null)
 
   function book(roomId: number, startsAt: string, slots: number): void {
     router.post(
@@ -57,11 +62,18 @@
   }
 
   function checkIn(meeting: Meeting): void {
+    dialogOpen = false
     router.post(`/room_bookings/${meeting.id}/check_in`, {}, { preserveScroll: true })
   }
 
   function cancel(meeting: Meeting): void {
+    dialogOpen = false
     router.delete(`/room_bookings/${meeting.id}`, { preserveScroll: true })
+  }
+
+  function openDialog(meetingId: number): void {
+    openMeetingId = meetingId
+    dialogOpen = true
   }
 </script>
 
@@ -79,12 +91,12 @@
 
   <!-- The calendar keeps its place: everything that appears and disappears —
        bookings, hints, messages — lives in the sidebar or floats above. -->
-  <div class="mt-6 flex flex-col items-start gap-6 lg:flex-row">
+  <div class="layout">
     <!-- On a phone your own meetings — and the check-in button — come before
          the calendar; that is what a phone is opened for. -->
-    <div class="w-full lg:hidden">{@render myBookings()}</div>
+    <div class="layout__mine">{@render myBookings()}</div>
 
-    <div class="w-full min-w-0 flex-1">
+    <Tile class="calendar">
       <RoomCalendar
         date={selected_date}
         {hours}
@@ -94,79 +106,233 @@
         {meetings}
         releasedSlots={released_slots}
         onBook={book}
+        onMeetingClick={openDialog}
       />
-    </div>
+    </Tile>
 
-    <aside class="w-full shrink-0 space-y-3 lg:w-72">
-      <div class="hidden lg:block">{@render myBookings()}</div>
+    <aside class="layout__side">
+      <div class="side">
+        <div class="side__mine">{@render myBookings()}</div>
 
-      <section class="space-y-2 rounded-xl border bg-card p-4 text-xs text-muted-foreground">
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded border bg-background"></span> свободно
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded bg-primary"></span> ваша бронь
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded bg-[oklch(0.72_0.16_70)]"></span> пора отметиться
-        </span>
-        <span class="flex items-center gap-2">
-          <span class="size-3.5 rounded border bg-muted"></span> занято или время прошло
-        </span>
-        <span class="flex items-center gap-2 pt-1">
-          <Undo size={16} aria-hidden="true" />
-          «освободилось» — бронь сняли автоматически, никто не отметился
-        </span>
-      </section>
+        <Tile>
+          <h2 class="bx--type-productive-heading-01">Обозначения</h2>
+          <ul class="legend bx--type-caption-01">
+            <li><span class="legend__swatch legend__swatch--free"></span> свободно</li>
+            <li><span class="legend__swatch legend__swatch--mine"></span> ваша бронь</li>
+            <li><span class="legend__swatch legend__swatch--warn"></span> пора отметиться</li>
+            <li><span class="legend__swatch legend__swatch--taken"></span> занято или время прошло</li>
+            <li>
+              <Undo size={16} aria-hidden="true" />
+              «освободилось» — бронь сняли автоматически, никто не отметился
+            </li>
+          </ul>
+        </Tile>
+      </div>
     </aside>
   </div>
+
+  <!-- The grid is the whole screen, so the actions for a meeting come to it
+       instead of sending the person to the sidebar to find the same row. -->
+  <Modal
+    open={dialogOpen}
+    size="xs"
+    passiveModal
+    selectorPrimaryFocus=".bx--modal-close"
+    modalHeading={openMeeting ? `${openMeeting.room_name}, ${time(openMeeting.starts_at)}–${time(openMeeting.ends_at)}` : ''}
+    on:close={() => (dialogOpen = false)}
+  >
+    {#if openMeeting}
+      <p class="bx--type-body-long-01">
+        {#if openMeeting.checked_in}
+          Вы отметились — эта бронь останется за вами.
+        {:else if openMeeting.can_check_in}
+          Отметьтесь, иначе бронь снимется и комната вернётся в общий доступ.
+        {:else}
+          Отметиться можно с {time(openMeeting.check_in_opens_at)}. Без отметки бронь снимется.
+        {/if}
+      </p>
+
+      <div class="dialog__actions">
+        {#if !openMeeting.checked_in && openMeeting.can_check_in}
+          <Button size="small" icon={CheckmarkFilled} onclick={() => checkIn(openMeeting)}>
+            Отметиться
+          </Button>
+        {/if}
+        <Button kind="danger-tertiary" size="small" onclick={() => cancel(openMeeting)}>
+          Отменить встречу
+        </Button>
+      </div>
+    {/if}
+  </Modal>
 
   <Toast message={error} />
 </AppLayout>
 
 {#snippet myBookings()}
-  <section class="rounded-xl border bg-card p-4">
-    <h2 class="text-sm font-semibold">Ваши брони</h2>
+  <Tile>
+    <h2 class="bx--type-productive-heading-01">Ваши брони</h2>
 
     {#if myMeetings.length === 0}
-      <p class="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
-        <Calendar size={16} aria-hidden="true" /> На этот день броней нет.
-      </p>
+      <p class="side__hint bx--type-body-long-01">На этот день броней нет.</p>
     {:else}
-      <ul class="mt-3 divide-y">
+      <ul class="bookings">
         {#each myMeetings as meeting (meeting.id)}
-          <li class="py-3 first:pt-0 last:pb-0">
-            <p class="flex items-center gap-2 text-sm">
-              <span
-                class="size-2 rounded-full {meeting.checked_in ? 'bg-success' : 'bg-primary'}"
-                aria-hidden="true"
-              ></span>
-              <span class="font-medium">{meeting.room_name}</span>
-              <span class="text-muted-foreground tabular-nums">{time(meeting.starts_at)}–{time(meeting.ends_at)}</span>
+          <li>
+            <p class="bookings__when">
+              <strong>{meeting.room_name}</strong>
+              <span>{time(meeting.starts_at)}–{time(meeting.ends_at)}</span>
             </p>
 
-            <div class="mt-2 flex flex-wrap items-center gap-2">
+            <div class="bookings__actions">
               {#if meeting.checked_in}
-                <span class="flex items-center gap-1 text-xs text-success">
-                  <CheckmarkFilled size={16} aria-hidden="true" /> вы отметились
-                </span>
+                <Tag type="green" icon={CheckmarkFilled}>вы отметились</Tag>
               {:else if meeting.can_check_in}
-                <Button size="small" onclick={() => checkIn(meeting)}>
-                  <CheckmarkFilled size={16} aria-hidden="true" /> Отметиться
+                <Button size="small" icon={CheckmarkFilled} onclick={() => checkIn(meeting)}>
+                  Отметиться
                 </Button>
               {:else}
-                <span class="text-xs text-muted-foreground">
+                <span class="side__hint bx--type-helper-text-01">
                   отметиться можно с {time(meeting.check_in_opens_at)}
                 </span>
               {/if}
 
-              <Button kind="ghost" size="small" onclick={() => cancel(meeting)}>
-                Отменить
-              </Button>
+              <Button kind="ghost" size="small" onclick={() => cancel(meeting)}>Отменить</Button>
             </div>
           </li>
         {/each}
       </ul>
     {/if}
-  </section>
+  </Tile>
 {/snippet}
+
+<style>
+  .layout {
+    margin-block-start: var(--cds-spacing-06);
+    display: grid;
+    gap: var(--cds-spacing-05);
+  }
+
+  :global(.calendar) {
+    padding: var(--cds-spacing-03);
+    min-width: 0;
+  }
+
+  .side {
+    display: grid;
+    gap: var(--cds-spacing-05);
+    align-content: start;
+  }
+
+  .side :global(.bx--tile),
+  .layout__mine :global(.bx--tile) {
+    display: grid;
+    justify-items: start;
+    gap: var(--cds-spacing-03);
+  }
+
+  .side__mine {
+    display: none;
+  }
+
+  .side__hint {
+    color: var(--cds-text-02);
+  }
+
+  .bookings {
+    display: grid;
+    gap: var(--cds-spacing-05);
+    width: 100%;
+  }
+
+  .bookings li + li {
+    border-block-start: 1px solid var(--cds-ui-03);
+    padding-block-start: var(--cds-spacing-05);
+  }
+
+  .bookings__when {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--cds-spacing-03);
+  }
+
+  .bookings__when span {
+    color: var(--cds-text-02);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bookings__actions {
+    margin-block-start: var(--cds-spacing-03);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--cds-spacing-03);
+  }
+
+  .dialog__actions {
+    margin-block-start: var(--cds-spacing-06);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--cds-spacing-03);
+  }
+
+  .legend {
+    display: grid;
+    gap: var(--cds-spacing-03);
+    color: var(--cds-text-02);
+  }
+
+  .legend li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--cds-spacing-03);
+  }
+
+  .legend :global(svg) {
+    flex-shrink: 0;
+    fill: var(--cds-text-03);
+  }
+
+  .legend__swatch {
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    border: 1px solid var(--cds-ui-04);
+  }
+
+  .legend__swatch--free {
+    background-color: var(--cds-ui-01);
+  }
+
+  .legend__swatch--mine {
+    background-color: var(--cds-interactive-01);
+    border-color: var(--cds-interactive-01);
+  }
+
+  .legend__swatch--warn {
+    background-color: var(--cds-support-03);
+    border-color: var(--cds-support-03);
+  }
+
+  .legend__swatch--taken {
+    background-color: var(--cds-ui-03);
+    border-color: var(--cds-ui-03);
+  }
+
+  /* The sidebar moves beside the calendar where Carbon expects two columns. */
+  @media (min-width: 66rem) {
+    .layout {
+      grid-template-columns: minmax(0, 1fr) 18rem;
+      align-items: start;
+      gap: var(--cds-spacing-06);
+    }
+
+    .layout__mine {
+      display: none;
+    }
+
+    .side__mine {
+      display: block;
+    }
+  }
+</style>
