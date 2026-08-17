@@ -7,7 +7,7 @@
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
-  import { firstError, time } from '@/lib/format'
+  import { time } from '@/lib/format'
   import RoomCalendar, {
     type CalendarRoom,
     type CalendarMeeting,
@@ -44,7 +44,6 @@
   } = $props()
 
   const myMeetings = $derived(meetings.filter((meeting) => meeting.mine))
-  const error = $derived(firstError(errors))
 
   // Clicking your own block on the grid opens what you can do with it. Kept in
   // the tree so Carbon can put focus back on close; the meeting outlives the
@@ -168,7 +167,7 @@
     {/if}
   </Modal>
 
-  <Toast message={error} />
+  <Toast {errors} />
 </AppLayout>
 
 {#snippet myBookings()}

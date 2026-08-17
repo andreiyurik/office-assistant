@@ -7,7 +7,7 @@
   import DayStrip from '@/lib/components/DayStrip.svelte'
   import PageHeader from '@/lib/components/PageHeader.svelte'
   import Toast from '@/lib/components/Toast.svelte'
-  import { firstError, initials } from '@/lib/format'
+  import { initials } from '@/lib/format'
 
   type TakenBy = {
     name: string
@@ -85,7 +85,6 @@
       .sort((a, b) => b.free_count - a.free_count)[0],
   )
 
-  const error = $derived(firstError(errors))
   const freeTotal = $derived(zones.reduce((sum, zone) => sum + zone.free_count, 0))
   const deskTotal = $derived(zones.reduce((sum, zone) => sum + zone.desks.length, 0))
 
@@ -326,7 +325,7 @@
     </p>
   </Modal>
 
-  <Toast message={error} />
+  <Toast {errors} />
 </AppLayout>
 
 {#snippet status()}

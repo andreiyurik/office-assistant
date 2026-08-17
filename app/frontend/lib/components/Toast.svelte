@@ -2,13 +2,21 @@
   // Messages float above the page instead of standing in the flow: an error
   // must never push the grid or the map that the person is aiming at.
   import { ToastNotification } from 'carbon-components-svelte'
+  import { firstError } from '@/lib/format'
 
-  let { message }: { message: string | null } = $props()
+  let { errors }: { errors: Record<string, string[] | string> } = $props()
+
+  const message = $derived(firstError(errors))
 
   let shown = $state(false)
 
+  // Watches the errors object, not the text inside it. Inertia sends a fresh
+  // object with every response, so walking into the same wall twice shows the
+  // toast twice; watching the message would go quiet the second time, because
+  // an identical string is not a change and the effect would never re-run.
   $effect(() => {
-    if (message) shown = true
+    errors
+    shown = message !== null
   })
 
   // Every message from the server is written as "what happened. what to do
