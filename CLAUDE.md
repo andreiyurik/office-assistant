@@ -27,7 +27,11 @@ When in doubt, choose the more boring implementation.
 
 - Ruby on Rails 8, `inertia_rails`, Vite
 - Svelte 5 (runes) + TypeScript
-- shadcn-svelte + Tailwind CSS (comes with the Inertia Svelte starter kit)
+- `carbon-components-svelte` 0.111 (theme g10) + `carbon-icons-svelte`, IBM Plex
+  Sans served locally. No Tailwind and no second component library: the project
+  ran on shadcn-svelte + Tailwind until `spike/carbon` measured the swap, and
+  the state before it is tagged `shadcn-baseline`. Layout is Carbon's grid plus
+  plain scoped CSS on `--cds-*` tokens — never a literal colour.
 - PostgreSQL in development (Docker Compose) and production (Kamal accessory)
 - Solid Queue for background jobs, Solid Cache for cache — **no Redis, no Sidekiq**
 - Rails 8 built-in authentication generator — **not Devise**
