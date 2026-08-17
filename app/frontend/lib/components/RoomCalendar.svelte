@@ -268,8 +268,10 @@
     gap: 1px;
   }
 
+  /* Your own meetings are the only blocks with actions behind them. */
   .room-calendar :global(.ec-event.mine) {
     --ec-event-bg-color: var(--cds-interactive-01);
+    cursor: pointer;
   }
 
   .room-calendar :global(.ec-event.checked-in) {
@@ -286,11 +288,6 @@
   .room-calendar :global(.ec-event.taken) {
     --ec-event-bg-color: var(--cds-ui-03);
     --ec-event-text-color: var(--cds-text-02);
-  }
-
-  /* Your own meetings are the only clickable blocks. */
-  .room-calendar :global(.ec-event.mine) {
-    cursor: pointer;
   }
 
   .room-calendar :global(.ec-bg-event.released) {
