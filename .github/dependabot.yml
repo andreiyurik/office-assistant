@@ -10,3 +10,10 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 10
+# The frontend is the larger half of the dependency tree — Carbon, Svelte,
+# Vite — and it was the only part nobody was watching.
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 10

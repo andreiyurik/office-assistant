@@ -1,5 +1,7 @@
 # Macrohard Office Assistant
 
+[![CI](https://github.com/andreiyurik/office-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/andreiyurik/office-assistant/actions/workflows/ci.yml)
+
 Внутренний сервис для офиса без закреплённых рабочих мест: бронирование мест и
 переговорных и ответ на вопрос «кто сегодня будет в офисе».
 
@@ -183,6 +185,11 @@ bin/kamal logs      # хвост логов приложения
 ```
 
 Сейчас приложение развёрнуто на `https://201-24-48-232.sslip.io`.
+
+Это открытое демо: адрес и пароли ниже опубликованы намеренно, войти может
+любой. Данные там ненастоящие — 60 выдуманных сотрудников из сидов, — и
+восстанавливаются одной командой `bin/kamal seed`. Ничего, кроме демо-данных,
+на этой машине нет.
 
 На самом сервере руками сделано одно: SSH только по ключу
 (`/etc/ssh/sshd_config.d/10-keys-only.conf` — `PasswordAuthentication no`,
