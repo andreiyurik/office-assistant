@@ -96,7 +96,10 @@
          the calendar; that is what a phone is opened for. -->
     <div class="layout__mine">{@render myBookings()}</div>
 
-    <Tile class="calendar">
+    <!-- No Tile around the grid: the table on "Кто в офисе" sits straight on the
+         page and the calendar is the same kind of surface. A card around one
+         and not the other made two screens look like two products. -->
+    <div class="calendar">
       <RoomCalendar
         date={selected_date}
         {hours}
@@ -108,7 +111,7 @@
         onBook={book}
         onMeetingClick={openDialog}
       />
-    </Tile>
+    </div>
 
     <aside class="layout__side">
       <div class="side">
@@ -212,8 +215,7 @@
     gap: var(--cds-spacing-05);
   }
 
-  :global(.calendar) {
-    padding: var(--cds-spacing-03);
+  .calendar {
     min-width: 0;
   }
 

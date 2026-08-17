@@ -463,15 +463,26 @@
     height: 1rem;
   }
 
+  /* text-03 on a tile is 2.2:1 — under the 3:1 that non-text graphics owe. */
   .desk :global(.desk__star) {
     position: absolute;
     inset-block-end: var(--cds-spacing-01);
     inset-inline-end: var(--cds-spacing-01);
-    fill: var(--cds-text-03);
+    fill: var(--cds-text-02);
   }
 
   .desk--mine :global(.desk__star) {
     fill: var(--cds-interactive-01);
+  }
+
+  /* Carbon hovers a tile to hover-ui, which on this screen is the grey that
+     already means "taken" — a free desk got darker than an occupied one under
+     the cursor. The fill stays put and the hover says "clickable" with the
+     interactive colour instead. Inset shadow, not outline: outline belongs to
+     the focus ring and the two must not fight. */
+  .desk--free :global(.bx--tile:hover) {
+    background-color: var(--cds-ui-02);
+    box-shadow: inset 0 0 0 1px var(--cds-interactive-01);
   }
 
   .desk--teammate :global(.bx--tile) {
@@ -479,8 +490,13 @@
     color: var(--cds-text-01);
   }
 
+  /* Carbon paints a disabled tile's content in disabled-02 — 1.3:1 against the
+     tile. That is the right colour for the label of a control you cannot use,
+     and the wrong one here: the same tile carries who is sitting at the desk,
+     which is information and has to stay readable. */
   .desk--taken :global(.bx--tile) {
     background-color: var(--cds-ui-03);
+    color: var(--cds-text-02);
   }
 
   .desk--near :global(.bx--tile) {

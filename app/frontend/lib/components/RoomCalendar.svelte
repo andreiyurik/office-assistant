@@ -205,12 +205,17 @@
       <span class="room">{resource.title}</span>
       <span class="room-capacity">{resource.extendedProps.capacity} мест</span>
     {/snippet}
+    <!-- A single slot is 32px tall and two lines of text need 36, so the time
+         only appears on a meeting long enough to hold it. On a half-hour block
+         the row it sits in already says when it is. -->
     {#snippet eventContent({ event, timeText })}
       {#if event.display === 'background'}
         <span class="event-note">{event.title}</span>
       {:else}
         <span class="event-title">{event.title}</span>
-        <span class="event-time">{timeText}</span>
+        {#if event.end.getTime() - event.start.getTime() > slotMs}
+          <span class="event-time">{timeText}</span>
+        {/if}
       {/if}
     {/snippet}
   </Calendar>
@@ -231,6 +236,10 @@
     --ec-event-bg-color: var(--cds-interactive-01);
     --ec-event-text-color: var(--cds-text-04);
     --ec-bg-event-opacity: 1;
+    /* The library keeps a gutter beside an event so two overlapping ones can
+       sit side by side. A room cannot be double-booked here, so the gutter is
+       dead space: blocks fill their column and the grid reads busy or free. */
+    --ec-event-col-gap: 0;
     font-family: inherit;
   }
 
@@ -241,6 +250,13 @@
   }
   .room-calendar :global(.ec-body .ec-sidebar .ec-slot.ec-hidden) {
     visibility: visible;
+  }
+
+  /* Now that blocks fill their column the indicator always crosses one, and a
+     2px saturated line through 14px text is hard to read past. One pixel is
+     Carbon's divider weight and the dot at the edge still marks the hour. */
+  .room-calendar :global(.ec-time-grid .ec-now-indicator) {
+    border-block-start-width: 1px;
   }
 
   /* Carbon has no rounded corners anywhere, so neither does an event. */

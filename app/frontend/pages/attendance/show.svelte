@@ -137,11 +137,14 @@
   </div>
 
   <!-- The teams stay a one-click filter rather than a select: six of them fit,
-       and picking one should cost the same as picking a day. -->
+       and picking one should cost the same as picking a day. Carbon's
+       interactive tag is a plain button, so which one is on has to be said in
+       aria-pressed — otherwise the filter reads as seven identical buttons. -->
   <div class="teams" role="group" aria-label="Команда">
     <Tag
       interactive
       type={selected_team_id ? 'outline' : 'blue'}
+      aria-pressed={!selected_team_id}
       onclick={() => router.visit(href(selected_date, null))}
     >
       Все команды
@@ -150,6 +153,7 @@
       <Tag
         interactive
         type={selected_team_id === team.id ? 'blue' : 'outline'}
+        aria-pressed={selected_team_id === team.id}
         onclick={() => router.visit(href(selected_date, team.id))}
       >
         {team.name}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Form } from '@inertiajs/svelte'
   import { Button, InlineNotification, PasswordInput, TextInput } from 'carbon-components-svelte'
+  import ArrowRight from 'carbon-icons-svelte/lib/ArrowRight.svelte'
   import Calendar from 'carbon-icons-svelte/lib/Calendar.svelte'
   import Grid from 'carbon-icons-svelte/lib/Grid.svelte'
   import UserMultiple from 'carbon-icons-svelte/lib/UserMultiple.svelte'
@@ -83,7 +84,10 @@
           required
         />
 
-        <Button type="submit" size="lg">Войти</Button>
+        <!-- Full width with the arrow: a Carbon button reserves 64px on the
+             right for an icon, so a short label leaves a squat box with a hole
+             in it. This is the shape IBM's own sign-in uses. -->
+        <Button type="submit" size="lg" icon={ArrowRight}>Войти</Button>
       </Form>
 
       <p class="login__foot bx--type-caption-01">
@@ -179,7 +183,13 @@
   .login__form :global(.bx--form) {
     display: grid;
     gap: var(--cds-spacing-06);
-    justify-items: start;
+  }
+
+  /* Direct child only: the password field's show/hide toggle is a .bx--btn too,
+     and stretching that one pushes the eye into the middle of the field. */
+  .login__form :global(.bx--form > .bx--btn) {
+    width: 100%;
+    max-width: none;
   }
 
   .login__form :global(.bx--form-item) {
