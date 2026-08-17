@@ -272,6 +272,13 @@
     flex-shrink: 0;
   }
 
+  /* Carbon paints a ghost button's label link-01 and turns the row under it
+     hover-ui on hover: #0f62fe on #e5e5e5 is 3.97:1. link-02 is the token the
+     system keeps for a link on a grey surface — 6.2:1 there, 7.8:1 at rest. */
+  .table :global(.bx--btn--ghost) {
+    color: var(--cds-link-02);
+  }
+
   /* Four columns are wider than a phone. Carbon scrolls the table inside its
      own container rather than letting it push the page sideways. */
   .table {

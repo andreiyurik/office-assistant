@@ -333,7 +333,9 @@
     font-size: var(--cds-caption-01-font-size);
   }
 
+  /* No opacity here: on a taken block it took the time under 4.5:1. The event
+     already sets its own text colour, and the smaller size carries the rank. */
   .room-calendar :global(.event-time) {
-    opacity: 0.85;
+    color: inherit;
   }
 </style>
