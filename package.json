@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@inertiajs/core": "^3.6.1",
+    "@inertiajs/core": "^3.7.0",
     "@tsconfig/svelte": "^5.0.8",
     "svelte-check": "^4.7.6",
     "typescript": "^6.0.3",
