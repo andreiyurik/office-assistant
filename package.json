@@ -13,7 +13,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json && tsc -p tsconfig.node.json"
   },
   "dependencies": {
-    "@event-calendar/core": "^5.12.0",
+    "@event-calendar/core": "^5.12.1",
     "@ibm/plex-sans": "^1.1.0",
     "@inertiajs/svelte": "^3.6.1",
     "@inertiajs/vite": "^3.6.1",
